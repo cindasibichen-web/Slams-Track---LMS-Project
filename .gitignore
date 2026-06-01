@@ -1,0 +1,8 @@
+lms_venv
+.env
+__pycache__/
+*.pyc
+
+generate_keys.py
+private.pem
+public.pem
