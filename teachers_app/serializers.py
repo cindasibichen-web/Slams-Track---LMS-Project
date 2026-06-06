@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from superadmin_app.models import *
+from django.utils import timezone
 
 
 # teachers profile get serializer 
@@ -57,6 +58,24 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             if not assigned_class:
                 return None
 
+            today = timezone.now().date()
+
+            total_students = StudentAcademicDetails.objects.filter(
+                student_class=assigned_class
+            ).count()
+
+            attendance_qs = StudentAttendance.objects.filter(
+                students_class=assigned_class,
+                date=today
+            )
+
+            present_count = attendance_qs.filter(status="Present").count()
+            absent_count = attendance_qs.filter(status="Absent").count()
+            late_count = attendance_qs.filter(status="Late").count()
+            half_day_count = attendance_qs.filter(status="Half Day").count()
+
+            is_marked = attendance_qs.exists()
+
             return {
                 "id": assigned_class.id,
                 "class_id": assigned_class.class_id,
@@ -66,5 +85,108 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
                 "batch": assigned_class.batch,
                 "department": assigned_class.department,
                 "branch": assigned_class.branch,
-                "status": assigned_class.status
+                "status": assigned_class.status,
+                "attendance_stats": {
+                    "date": today,
+                    "is_marked": is_marked,
+                    "total_students": total_students,
+                    "present_count": present_count,
+                    "absent_count": absent_count,
+                    "late_count": late_count,
+                    "half_day_count": half_day_count
+                }
             }
+    
+    
+    
+# applyleave 
+
+class TeacherLeaveSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TeacherLeave
+        fields = "__all__"
+        read_only_fields = ["teacher", "status"]
+
+    def validate(self, attrs):
+
+        leave_type = attrs.get("leave_type")
+        from_date = attrs.get("from_date")
+        to_date = attrs.get("to_date")
+        today = timezone.now().date()
+
+        # Previous date validation
+        if from_date < today:
+            raise serializers.ValidationError(
+                {"from_date": "Previous dates are not allowed."}
+            )
+
+        if to_date < today:
+            raise serializers.ValidationError(
+                {"to_date": "Previous dates are not allowed."}
+            )
+
+        # To date must be greater than or equal to from date
+        if to_date < from_date:
+            raise serializers.ValidationError(
+                {"to_date": "To date must be greater than or equal to from date."}
+            )
+
+        # Use the teacher instance passed from the view context
+        teacher = self.context.get("teacher")
+        
+        if not teacher:
+            raise serializers.ValidationError("Teacher profile not found.")
+
+        # Check overlapping leave applications
+        existing_leave = TeacherLeave.objects.filter(
+            teacher=teacher,
+            from_date__lte=to_date,
+            to_date__gte=from_date
+        ).exists()
+
+        if existing_leave:
+            raise serializers.ValidationError(
+                "You have already applied leave for the selected date(s)."
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+
+        from_date = validated_data["from_date"]
+        to_date = validated_data["to_date"]
+        leave_type = validated_data["leave_type"]
+
+        # Calculate no_of_days
+        if leave_type == "Half Day Leave":
+            validated_data["no_of_days"] = 1
+        else:
+            validated_data["no_of_days"] = (
+                (to_date - from_date).days + 1
+            )
+
+        return super().create(validated_data)
+    
+    
+class TeacherLeaveListSerializer(serializers.ModelSerializer):
+
+ 
+    class Meta:
+        model = TeacherLeave
+        fields = [
+            "id",
+         
+            "leave_type",
+            "date",
+            "from_date",
+            "to_date",
+            "no_of_days",
+            "half_day_type",
+            "reason",
+            "reachable_contact_number",
+            "supporting_document",
+            "SubstituteTeacher",
+            "status",
+            "created_at",
+        ]
