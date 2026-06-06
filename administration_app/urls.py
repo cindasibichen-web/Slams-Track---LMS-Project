@@ -7,10 +7,9 @@ urlpatterns = [
 #****************** staff management ***********************************************************
     path('staff-create/', AddStaffManagementView.as_view()),
     path('list-teaching-staff/', ListTeachingStaffAPIView.as_view()),
+    path('edit-staff/<int:staff_id>/', EditStaffAPIView.as_view()),
     path('list-non-teaching-staff/', ListNonTeachingStaffAPIView.as_view()),
-
-
-    # Assigning scetion 
+ # Assigning scetion 
     path('todays-absent-teachers/', TodaysAbsentTeachersAPIView.as_view()),
     path('teacher-todays-timetable/<int:teacher_id>/', TeacherTodaysTimeTableAPIView.as_view()),
     path('available-teachers-list/', AvailableSubstituteTeachersAPIView.as_view()),

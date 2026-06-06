@@ -138,7 +138,8 @@ class StudentListAPIView(APIView):
 
     def get(self, request):
 
-        queryset = StudentAcademicDetails.objects.select_related(
+        queryset = StudentAcademicDetails.objects.filter(user__category=request.user.category
+).select_related(
             'user',
             'student_class'
         ).all().order_by('-id')
@@ -656,27 +657,31 @@ class ListTeachingStaffAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.user.role == "SuperAdmin":
+            staff_members = StaffManagementModel.objects.all()
+        else:
 
-        staff_members = StaffManagementModel.objects.filter(
-            is_teacher=True,
-            profiles__category=request.user.category
-        )
+
+            staff_members = StaffManagementModel.objects.filter(
+                is_teacher=True,
+                profiles__category=request.user.category
+            )
 
         paginator = ListPagination()
 
         paginated_queryset = paginator.paginate_queryset(
-            staff_members,
-            request
-        )
+                staff_members,
+                request
+            )
 
         serializer = ListStaffSerializer(
-            paginated_queryset,
-            many=True
-        )
+                paginated_queryset,
+                many=True
+            )
 
         return paginator.get_paginated_response(
-            serializer.data
-        )
+                serializer.data
+            )
 
 # list non teaching staff
 class ListNonTeachingStaffAPIView(APIView):
@@ -685,13 +690,18 @@ class ListNonTeachingStaffAPIView(APIView):
 
     def get(self, request):
 
-        staff_members = StaffManagementModel.objects.filter(is_teacher=False, profiles__category=request.user.category)
+        if request.user.role == "SuperAdmin":
+            staff_members = StaffManagementModel.objects.all()
+        else:
+
+
+            staff_members = StaffManagementModel.objects.filter(is_teacher=False, profiles__category=request.user.category)
         paginator = ListPagination()
 
         paginated_queryset = paginator.paginate_queryset(
             staff_members,
-            request
-        )
+                request
+            )
 
         serializer = ListStaffSerializer(paginated_queryset, many=True)
 
@@ -707,14 +717,14 @@ class EditStaffAPIView(APIView):
     def patch(self, request, staff_id):
 
         try:
-            staff_member = StaffManagementModel.objects.get(id=staff_id, profiles__category=request.user.category)
+            staff_member = StaffManagementModel.objects.get(id=staff_id)
         except StaffManagementModel.DoesNotExist:
             return Response({
                 "status": False,
                 "message": "Staff member not found"
             }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = EditStaffSerializer(staff_member, data=request.data, partial=True)
+        serializer = StaffCreateSerializer(staff_member, data=request.data, partial=True)
 
         if serializer.is_valid():
 
@@ -818,7 +828,12 @@ class AddListClassAPIView(APIView):
 
     def get(self, request):
 
-        classes = ClassModel.objects.filter(
+        if request.user.role == "SuperAdmin":
+            classes = ClassModel.objects.all()
+        else:
+
+
+         classes = ClassModel.objects.filter(
             category=request.user.category
         ).annotate(
             total_students=Count("studentacademicdetails")
@@ -1078,16 +1093,30 @@ class TodaysAbsentTeachersAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        
 
+
+
+
+         
         today = timezone.now().date()
-
-        absent_teachers_qs = TeacherLeave.objects.filter(
+        absent_teachers_qs = TeacherLeave.objects.filter(teacher__profiles__category=request.user.category,
             from_date__lte=today,
             to_date__gte=today,
             # status="Approved"
         ).select_related(
             "teacher"
         )
+
+        if request.user.role == "SuperAdmin":
+            absent_teachers_qs = TeacherLeave.objects.filter(
+                from_date__lte=today,
+                to_date__gte=today,
+                # status="Approved"
+            ).select_related(
+                "teacher"
+            )
+
 
         absent_teachers = []
 
@@ -1097,6 +1126,7 @@ class TodaysAbsentTeachersAPIView(APIView):
 
             absent_teachers.append({
                 "teacher_id": teacher.id,
+                "role": teacher.profiles.role,
                 "teacher_name": teacher.staff_name,
                 "user_id": teacher.profiles.user_id,
                 "leave_start_date": leave.from_date,
@@ -1107,9 +1137,11 @@ class TodaysAbsentTeachersAPIView(APIView):
         return Response({
             "status": True,
             "message": "Today's absent teachers fetched successfully",
+            "category": teacher.profiles.category.name,
             "date": today,
             "absent_teachers_count": len(absent_teachers),
-            "absent_teachers": absent_teachers
+            "absent_teachers": absent_teachers,
+         
         }, status=status.HTTP_200_OK)  
 
 
@@ -1138,6 +1170,8 @@ class TeacherTodaysTimeTableAPIView(APIView):
                 "status": False,
                 "message": f"No timetable found for this teacher on {today}"
             }, status=status.HTTP_404_NOT_FOUND)
+        
+        
 
         timetable_data = []
         for item in timetables:

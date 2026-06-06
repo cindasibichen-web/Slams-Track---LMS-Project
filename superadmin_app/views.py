@@ -158,6 +158,7 @@ class LoginAPIView(APIView):
                 "role": user.role,
                 "name": user.fullname,
                 "category": user.category.name if user.category else None,
+                "permissions" : user.permissions.values_list("code", flat=True)
             },
 
             "tokens": {
@@ -1782,4 +1783,203 @@ class DashboardStudentPieChartBatchCountAPIViews(APIView):
 
 
 
+# =================================== 
+# Profile Settings
+# ===================================
+
+
+class ProfileSettingsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        try:
+
+            serializer = ProfileSettingsSerializer(
+                request.user
+            )
+
+            return Response({
+                "status": True,
+                "message": "Profile fetched successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+
+            print("PROFILE FETCH ERROR =", str(e))
+
+            return Response({
+                "status": False,
+                "message": "Unable to fetch profile details."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+class ProfileSettingsUpdateAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+
+        try:
+
+            user = request.user
+
+            serializer = ProfileSettingsUpdateSerializer(
+                user,
+                data=request.data,
+                partial=True
+            )
+
+            if not serializer.is_valid():
+
+                return Response({
+                    "status": False,
+                    "message": "Invalid data",
+                    "errors": serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            with transaction.atomic():
+
+                serializer.save()
+
+            print(
+                f"PROFILE UPDATED: {user.user_id}"
+            )
+
+            return Response({
+                "status": True,
+                "message": "Profile updated successfully.",
+                "data": ProfileSettingsSerializer(user).data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+
+            print("PROFILE UPDATE ERROR =", str(e))
+
+            return Response({
+                "status": False,
+                "message": "Unable to update profile.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def patch(self, request):
+
+        return self.put(request)
+    
+class ChangePasswordAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = ChangePasswordSerializer(
+            data=request.data
+        )
+
+        if not serializer.is_valid():
+
+            return Response({
+                "status": False,
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        current_password = (
+            serializer.validated_data[
+                "current_password"
+            ]
+        )
+
+        if not request.user.check_password(
+            current_password
+        ):
+
+            return Response({
+                "status": False,
+                "message":
+                "Current password is incorrect."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(
+            serializer.validated_data[
+                "new_password"
+            ]
+        )
+
+        request.user.save()
+
+        print(
+            f"PASSWORD CHANGED: {request.user.user_id}"
+        )
+        
+        return Response({
+            "status": True,
+            "message":
+            "Password changed successfully."
+        }, status=status.HTTP_200_OK)
+    
+class LogoutAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        try:
+
+            refresh_token = request.data.get('refresh')
+
+            if refresh_token:
+                try:
+                    RefreshToken(refresh_token).blacklist()
+                except Exception:
+                    pass
+
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            ip_address = get_client_ip(request)
+            browser = get_browser(user_agent)
+            device_name = get_device(user_agent)
+            location = get_location(ip_address)
+
+            latest_login = LoginHistory.objects.filter(
+            user=request.user,
+            logout_time__isnull=True
+            ).order_by('-created_at').first()
+
+            if latest_login and not latest_login.logout_time:
+                latest_login.logout_time = timezone.now()
+                latest_login.login_status = 'LOGOUT'
+                latest_login.save(update_fields=['logout_time', 'login_status'])
+
+            header = request.META.get('HTTP_AUTHORIZATION', '')
+            current_token = header.replace('Bearer ', '').strip()
+
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                current_jti = AccessToken(current_token)['jti']
+
+                UserSession.objects.filter(
+                    user=request.user,
+                    session_id=current_jti,
+                    is_active=True
+                ).update(is_active=False)
+            
+            except Exception :
+
+                UserSession.objects.filter(
+                    user=request.user,
+                    is_active=True
+                ).update(is_active=False)
+
+            return Response({
+                'status': True,
+                'message': 'Logged out successfully.'
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+
+            print('LOGOUT ERROR =', str(e))
+
+            return Response({
+                'status': False,
+                'message': 'Unable to logout.'
+            }, status=500)        

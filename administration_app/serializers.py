@@ -364,6 +364,7 @@ class StaffCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'profiles': {'required': False}
         }
+    
 
     def create(self, validated_data):
 
@@ -488,6 +489,86 @@ Please change your password after first login.
         )
 
         return staff
+    def update(self, instance, validated_data):
+
+        permission_names = validated_data.pop("permissions", None)
+
+        temporary_password = validated_data.pop(
+            "temporary_password",
+            None
+        )
+
+        email = validated_data.pop(
+            "email",
+            None
+        )
+
+        phone_number = validated_data.pop(
+            "phone_number",
+            None
+        )
+
+        role = validated_data.pop(
+            "role",
+            None
+        )
+
+        profile = instance.profiles
+
+        # ----------------------------
+        # UPDATE PROFILE
+        # ----------------------------
+
+        if email is not None:
+            profile.email = email
+
+        if phone_number is not None:
+            profile.phone_number = phone_number
+
+        if role is not None:
+            profile.role = role
+
+        if temporary_password:
+            profile.password = make_password(
+                temporary_password
+            )
+
+        profile.save()
+
+        # ----------------------------
+        # UPDATE PERMISSIONS
+        # ----------------------------
+
+        if permission_names is not None:
+
+            permission_objects = []
+
+            for permission_name in permission_names:
+
+                module_name = permission_name.split("_")[0]
+
+                permission_obj, created = Permission.objects.get_or_create(
+                    code=permission_name,
+                    defaults={
+                        "module": module_name.title(),
+                        "description": permission_name
+                    }
+                )
+
+                permission_objects.append(permission_obj)
+
+            profile.permissions.set(permission_objects)
+
+        # ----------------------------
+        # UPDATE STAFF DETAILS
+        # ----------------------------
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
     
    # list staffs serializer
 class ListStaffSerializer(serializers.ModelSerializer):

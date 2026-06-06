@@ -39,5 +39,19 @@ urlpatterns = [
 
    
 
+   # ==========================
+
+# PROFILE SETTINGS URLS
+
+# ==========================
+
+   path('settings/profile/',ProfileSettingsAPIView.as_view(),name='profile-settings'),
+
+   path('settings/profile/update/',ProfileSettingsUpdateAPIView.as_view(),name='profile-settings-update'),
+
+   path('settings/change-password/',ChangePasswordAPIView.as_view(),name='change-password'),
+
+   path('settings/logout/',LogoutAPIView.as_view(),name='logout'),
+
 
 ]
