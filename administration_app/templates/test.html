@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Slam Track – Finance</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --navy:#1a2a5e;--navy-light:#233272;--white:#fff;
+    --bg:#f4f6fb;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+    --green:#22c55e;--green-bg:#dcfce7;--orange:#f97316;--orange-bg:#ffedd5;
+    --red:#ef4444;--red-bg:#fee2e2;--blue:#3b82f6;--blue-bg:#dbeafe;
+    --accent:#2563eb;
+  }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:260px;background:var(--navy);color:var(--white);display:flex;flex-direction:column;flex-shrink:0;min-height:100vh;}
+  .sidebar-brand{display:flex;align-items:center;gap:12px;padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
+  .brand-icon{width:42px;height:42px;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .brand-icon svg{width:28px;height:28px;}
+  .brand-text{line-height:1.2;}
+  .brand-text .name{font-weight:700;font-size:16px;}
+  .brand-text .sub{font-size:12px;opacity:.7;}
+  .nav{padding:18px 12px;flex:1;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:rgba(255,255,255,.75);transition:.15s;}
+  .nav-item:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .nav-item.active{background:#fff;color:var(--navy);}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0;}
+
+  /* ── TOPBAR ── */
+  .main{flex:1;display:flex;flex-direction:column;}
+  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;gap:14px;}
+  .topbar-icon{color:var(--muted);}
+  .topbar-title{font-size:16px;font-weight:600;flex:1;}
+  .topbar-bell{width:36px;height:36px;border:1.5px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+  .bell-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;position:absolute;top:6px;right:7px;}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;}
+  .admin-label{font-size:13px;font-weight:500;}
+  .chevron-down{color:var(--muted);}
+
+  /* ── CONTENT ── */
+  .content{padding:28px;flex:1;}
+  .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+  .page-header h1{font-size:22px;font-weight:700;}
+  .page-header p{font-size:13px;color:var(--muted);margin-top:3px;}
+  .header-actions{display:flex;gap:10px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s;}
+  .btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--text);}
+  .btn-outline:hover{border-color:#93c5fd;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:#1d4ed8;}
+
+  /* ── STAT CARDS ── */
+  .stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;}
+  .stat-card{background:#fff;border-radius:14px;padding:22px 24px;border:1px solid var(--border);}
+  .stat-label{font-size:13px;color:var(--muted);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
+  .stat-value{font-size:26px;font-weight:700;}
+  .stat-sub{font-size:12px;color:var(--accent);margin-top:6px;font-weight:500;}
+
+  /* ── TABS ── */
+  .tabs{display:flex;gap:4px;background:#f1f5f9;border-radius:10px;padding:4px;width:fit-content;margin-bottom:22px;}
+  .tab{padding:8px 28px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s;border:none;background:transparent;}
+  .tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+  /* ── PANEL ── */
+  .panel{background:#fff;border-radius:14px;border:1px solid var(--border);padding:24px;}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .panel-title{font-size:16px;font-weight:700;}
+
+  /* ── FILTERS ROW ── */
+  .filters-row{display:flex;gap:14px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;}
+  .filter-group{display:flex;flex-direction:column;gap:5px;}
+  .filter-label{font-size:12px;color:var(--muted);font-weight:500;}
+  .filter-input{display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;color:var(--text);min-width:160px;}
+  .filter-input input{border:none;outline:none;font-size:13px;font-family:inherit;width:100%;background:transparent;}
+  .filter-input select{border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;cursor:pointer;width:100%;}
+  .search-bar{display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;min-width:220px;}
+  .search-bar input{border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;width:100%;}
+  .actions-right{display:flex;gap:10px;align-items:center;margin-left:auto;}
+  .btn-delete{background:#fff;border:1.5px solid #fca5a5;color:#ef4444;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn-export{background:#fff;border:1.5px solid var(--border);color:var(--text);display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+
+  /* ── TABLE ── */
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1.5px solid var(--border);}
+  td{font-size:13px;padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#f8fafc;}
+  .course-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid;}
+  .badge-paid{color:var(--green);border-color:var(--green);background:var(--green-bg);}
+  .badge-pending{color:var(--orange);border-color:var(--orange);background:var(--orange-bg);}
+  .badge-failed{color:var(--red);border-color:var(--red);background:var(--red-bg);}
+  .badge-active{color:var(--green);border-color:var(--green);background:var(--green-bg);}
+  .badge-inactive{color:var(--muted);border-color:var(--border);background:#f1f5f9;}
+  .badge-dropout{color:var(--orange);border-color:var(--orange);background:var(--orange-bg);}
+  .badge-resign{color:var(--orange);border-color:var(--orange);background:var(--orange-bg);}
+  .action-btns{display:flex;gap:8px;}
+  .icon-btn{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--muted);}
+  .icon-btn:hover{background:#f1f5f9;color:var(--accent);}
+  .icon-btn.edit:hover{color:var(--accent);}
+
+  /* ── PAGINATION ── */
+  .pagination{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:18px;font-size:13px;color:var(--muted);}
+  .page-btn{width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--muted);}
+  .page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .page-btn:hover:not(.active){background:#f1f5f9;}
+
+  /* ── DETAIL VIEW ── */
+  .detail-view{display:none;}
+  .detail-back{margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .detail-card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:24px;}
+  .detail-section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;}
+  .detail-row{display:flex;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .detail-row:last-child{border-bottom:none;}
+  .detail-key{width:160px;color:var(--muted);font-weight:500;flex-shrink:0;}
+  .detail-val{font-weight:600;}
+  .doc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:#f8fafc;margin-bottom:8px;font-size:13px;font-weight:500;}
+  .doc-row:last-child{margin-bottom:0;}
+
+  /* ── REPORTS ── */
+  .reports-section{display:none;}
+  .report-block{margin-bottom:28px;}
+  .report-block-title{font-size:15px;font-weight:700;margin-bottom:16px;}
+
+  /* ── CHART ── */
+  .chart-wrap{background:#fff;border-radius:14px;border:1px solid var(--border);padding:24px;}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .chart-title{font-size:14px;font-weight:700;}
+  .chart-legend{display:flex;gap:16px;font-size:12px;color:var(--muted);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;}
+  canvas{max-height:200px;}
+
+  /* ── PAYROLL (placeholder) ── */
+  .payroll-section{display:none;padding:40px;text-align:center;color:var(--muted);}
+
+  /* hide/show */
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* checkbox */
+  input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);}
+
+  /* year select */
+  .year-select{border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="16" fill="#1a2a5e"/><path d="M8 22L14 10l5 8 3-4 4 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="brand-text">
+      <div class="name">Slam Track</div>
+      <div class="sub">Dashboard</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item" onclick="setNav(this,'dashboard')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke-width="2"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="setNav(this,'staff')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="4" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-width="2" stroke-linecap="round"/></svg>
+      Staff Management
+    </div>
+    <div class="nav-item" onclick="setNav(this,'academic')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 3L2 8l10 5 10-5-10-5z" stroke-width="2" stroke-linejoin="round"/><path d="M2 8v8m10 4v-8m8-4v8" stroke-width="2" stroke-linecap="round"/></svg>
+      Academic Management
+    </div>
+    <div class="nav-item" onclick="setNav(this,'student')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="9" cy="7" r="4" stroke-width="2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke-width="2" stroke-linecap="round"/><path d="M16 12a4 4 0 110-8" stroke-width="2" stroke-linecap="round"/><path d="M19 16c1.7.5 3 2 3 4" stroke-width="2" stroke-linecap="round"/></svg>
+      Student Management
+    </div>
+    <div class="nav-item" onclick="setNav(this,'attendance')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/><path d="M9 16l2 2 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Attendance
+    </div>
+    <div class="nav-item active" onclick="setNav(this,'finance')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="5" width="20" height="14" rx="2" stroke-width="2"/><path d="M2 10h20" stroke-width="2"/><circle cx="6" cy="15" r="1" fill="currentColor"/><rect x="9" y="14" width="6" height="2" rx="1" fill="currentColor"/></svg>
+      Finance
+    </div>
+    <div class="nav-item" onclick="setNav(this,'settings')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke-width="2"/></svg>
+      Settings
+    </div>
+  </nav>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <svg class="topbar-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="3" stroke-width="2"/><path d="M3 9h18" stroke-width="2"/></svg>
+    <span class="topbar-title">Jyothi Public School Kottayam</span>
+    <div class="topbar-bell"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-width="2" stroke-linecap="round"/></svg><div class="bell-dot"></div></div>
+    <div class="avatar">A</div>
+    <span class="admin-label">Admin User</span>
+    <svg class="chevron-down" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ FINANCE LIST VIEW ══ -->
+    <div id="view-finance" class="view active">
+      <!-- Page header (hidden in detail) -->
+      <div id="finance-header">
+        <div class="page-header">
+          <div>
+            <h1>Finance</h1>
+            <p>Track admissions, payments, and financial records in one place.</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-outline">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/></svg>
+              Today: May 23, 2026
+            </button>
+            <button class="btn btn-outline" onclick="downloadAdmissions()">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export Report
+            </button>
+            <button class="btn btn-primary" onclick="showAddAdmission()">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2.5" stroke-linecap="round"/></svg>
+              Add Admission
+            </button>
+          </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-label">Total Admission
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#93c5fd"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke-width="2"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stat-value">842/900</div>
+            <div class="stat-sub">Admission rate 92%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Amount Collected
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#93c5fd"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stat-value">$1,50,000</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Admission Pending amount
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#93c5fd"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke-width="2"/><line x1="19" y1="8" x2="19" y2="14" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="11" x2="16" y2="11" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stat-value">$1,50,000</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab" id="tab-payroll" onclick="switchTab('payroll')">Payroll</button>
+        <button class="tab active" id="tab-admission" onclick="switchTab('admission')">Admission</button>
+        <button class="tab" id="tab-reports" onclick="switchTab('reports')">Reports</button>
+      </div>
+
+      <!-- ── ADMISSION TAB ── -->
+      <div id="tab-content-admission">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Students Admission</span>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="search-bar">
+                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/></svg>
+                <input type="text" id="search-input" placeholder="Search id or name..." oninput="filterTable()"/>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"/> Select all</label>
+              <button class="btn-delete"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6" stroke-width="2"/><path d="M19 6l-1 14H6L5 6" stroke-width="2"/><path d="M10 11v6M14 11v6" stroke-width="2" stroke-linecap="round"/><path d="M9 6V4h6v2" stroke-width="2"/></svg> Delete all</button>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters-row">
+            <div class="filter-group">
+              <span class="filter-label">Admission Date</span>
+              <div class="filter-input">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="2" stroke-linecap="round"/></svg>
+                <input type="date" id="filter-date" value="2026-05-23" onchange="filterTable()"/>
+              </div>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Select Course</span>
+              <div class="filter-input">
+                <select id="filter-course" onchange="filterTable()">
+                  <option value="">All Course</option>
+                  <option value="10th">10th Standard</option>
+                  <option value="B.com">B.com</option>
+                  <option value="M.com">M.com</option>
+                  <option value="BCA">BCA</option>
+                </select>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">Admission ID</span>
+              <div class="filter-input">
+                <select id="filter-admid" onchange="filterTable()">
+                  <option value="">All Admission ID</option>
+                  <option value="in123">in123</option>
+                  <option value="ADI123">ADI123</option>
+                </select>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table id="admission-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" onchange="toggleSelectAll(this)"/></th>
+                <th>Admission ID</th>
+                <th>Student Name</th>
+                <th>Course & Standard</th>
+                <th>Admission Date</th>
+                <th>Admission Amount</th>
+                <th>Paid Amount</th>
+                <th>Payment Mode</th>
+                <th>Payment Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admission-tbody">
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+
+          <div class="pagination" id="adm-pagination"></div>
+        </div>
+      </div>
+
+      <!-- ── PAYROLL TAB ── -->
+      <div id="tab-content-payroll" style="display:none;">
+        <div class="panel" style="text-align:center;padding:60px;color:var(--muted);">
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin:0 auto 14px;display:block;opacity:.4;"><rect x="2" y="5" width="20" height="14" rx="2" stroke-width="1.5"/><path d="M2 10h20" stroke-width="1.5"/></svg>
+          <div style="font-size:15px;font-weight:600;">Payroll Management</div>
+          <div style="font-size:13px;margin-top:6px;">Salary, deductions and payslip management coming here.</div>
+        </div>
+      </div>
+
+      <!-- ── REPORTS TAB ── -->
+      <div id="tab-content-reports" style="display:none;">
+
+        <!-- Course Report -->
+        <div class="panel report-block">
+          <div class="panel-header">
+            <span class="panel-title">Course report</span>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="search-bar"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/></svg><input type="text" placeholder="Search id or name..." oninput="filterCourseTable(this.value)"/></div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox"/> Select all</label>
+            </div>
+          </div>
+          <div class="filters-row" style="margin-bottom:16px;">
+            <div class="filter-group"><span class="filter-label">Select Course & Standard</span>
+              <div class="filter-input"><select id="cr-course" onchange="filterCourseTable('')"><option value="">All Course & Stan...</option><option value="B.com">B.com</option><option value="10th">10th</option><option value="M.com">M.com</option><option value="BCA">BCA</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+            <div class="filter-group"><span class="filter-label">Batch-wise</span>
+              <div class="filter-input"><select id="cr-batch" onchange="filterCourseTable('')"><option value="">All Batch</option><option value="10">10</option><option value="8">8</option><option value="7">7</option><option value="6">6</option><option value="9">9</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+          </div>
+          <table id="course-table">
+            <thead><tr><th>Course & Standard</th><th>Duration</th><th>Active Students</th><th>Completed Students</th><th>Revenue Generated</th><th>Pending Fees</th><th>Total Teachers</th><th>Batch</th><th>Status</th></tr></thead>
+            <tbody id="course-tbody"></tbody>
+          </table>
+          <div class="pagination" id="cr-pagination"></div>
+        </div>
+
+        <!-- Students Report -->
+        <div class="panel report-block">
+          <div class="panel-header">
+            <span class="panel-title">Students report</span>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="search-bar"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/></svg><input type="text" placeholder="Search id or name..." oninput="filterStudentReport(this.value)"/></div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox"/> Select all</label>
+              <button class="btn-delete"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6" stroke-width="2"/><path d="M19 6l-1 14H6L5 6" stroke-width="2"/></svg> Delete all</button>
+              <button class="btn-export"onclick="downloadStudentReport()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg> Export Report</button>
+            </div>
+          </div>
+          <div class="filters-row" style="margin-bottom:16px;">
+            <div class="filter-group"><span class="filter-label">Select Course & Standard</span>
+              <div class="filter-input"><select id="sr-course" onchange="filterStudentReport('')"><option value="">All Course & Stan...</option><option value="B.com">B.com</option><option value="10th">10th</option><option value="M.com">M.com</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+            <div class="filter-group"><span class="filter-label">Batch-wise</span>
+              <div class="filter-input"><select id="sr-batch" onchange="filterStudentReport('')"><option value="">All Batch</option><option value="2019">2019</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+            <div class="filter-group"><span class="filter-label">Gender</span>
+              <div class="filter-input"><select id="sr-gender" onchange="filterStudentReport('')"><option value="">All Gender</option><option value="Male">Male</option><option value="Female">Female</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+          </div>
+          <table id="student-report-table">
+            <thead><tr><th>Course & Standard</th><th>Student Name</th><th>Admission Number</th><th>Gender</th><th>Collected Fees</th><th>Attendance Percentage</th><th>Batch</th><th>Parent Number</th><th>Status</th></tr></thead>
+            <tbody id="sr-tbody"></tbody>
+          </table>
+          <div class="pagination" id="sr-pagination"></div>
+        </div>
+
+        <!-- Teacher Report -->
+        <div class="panel report-block">
+          <div class="panel-header">
+            <span class="panel-title">Teacher report</span>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="search-bar"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/></svg><input type="text" placeholder="Search id or name..." oninput="filterTeacherReport(this.value)"/></div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox"/> Select all</label>
+              <button class="btn-delete"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6" stroke-width="2"/><path d="M19 6l-1 14H6L5 6" stroke-width="2"/></svg> Delete all</button>
+              <button class="btn-export" onclick="downloadTeacherReport()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg> Export Report</button>
+            </div>
+          </div>
+          <div class="filters-row" style="margin-bottom:16px;">
+            <div class="filter-group"><span class="filter-label">Select Course & Standard</span>
+              <div class="filter-input"><select id="tr-course" onchange="filterTeacherReport('')"><option value="">All Course & Stan...</option><option value="B.com">B.com</option><option value="10th">10th</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+            <div class="filter-group"><span class="filter-label">Batch-wise</span>
+              <div class="filter-input"><select id="tr-batch" onchange="filterTeacherReport('')"><option value="">All Batch</option><option value="2019">2019</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+            <div class="filter-group"><span class="filter-label">Gender</span>
+              <div class="filter-input"><select id="tr-gender" onchange="filterTeacherReport('')"><option value="">All Gender</option><option value="Male">Male</option><option value="Female">Female</option></select><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path d="M6 9l6 6 6-6" stroke-width="2"/></svg></div>
+            </div>
+          </div>
+          <table id="teacher-report-table">
+            <thead><tr><th>Teacher ID</th><th>Teacher Name</th><th>Joined Date</th><th>Gender</th><th>Salary</th><th>Attendance Percentage</th><th>In-charge Classes</th><th>Teacher Number</th><th>Status</th></tr></thead>
+            <tbody id="tr-tbody"></tbody>
+          </table>
+          <div class="pagination" id="tr-pagination"></div>
+        </div>
+
+        <!-- Return vs Expenses Chart -->
+        <div class="chart-wrap">
+          <div class="chart-header">
+            <span class="chart-title">Return Vs Expenses</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:13px;color:var(--muted);">Year:</span>
+              <select class="year-select"><option>All Year</option><option>2026</option><option>2025</option><option>2024</option></select>
+              <button class="btn-export" onclick="downloadRevenueReport()"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg> Export Report</button>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#3b82f6;"></span>Admission Revenue</span>
+            <span><span class="legend-dot" style="background:#22c55e;"></span>Fee collection</span>
+            <span><span class="legend-dot" style="background:#94a3b8;"></span>Salary expenses</span>
+          </div>
+          <canvas id="barChart" height="200" style="margin-top:16px;"></canvas>
+        </div>
+
+      </div><!-- end reports -->
+    </div><!-- end view-finance -->
+
+    <div id="view-settings" class="view">
+      <div class="page-header">
+        <div>
+          <h1>Settings</h1>
+          <p>Settings module moved to a dedicated page.</p>
+        </div>
+      </div>
+
+      <div class="panel" style="text-align:center;padding:60px;">
+        <h3 style="margin-bottom:10px;">Settings Module</h3>
+        <p style="color:var(--muted);">
+          Profile, Change Password, Security Settings and Account Settings
+          will be implemented in a separate HTML page.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══ DETAIL VIEW ═══ -->
+    <div id="view-detail" class="view">
+      <!-- Tabs shown in detail too -->
+      <div class="tabs" style="margin-bottom:22px;">
+        <button class="tab" onclick="switchTab('payroll')">Payroll</button>
+        <button class="tab active">Admission</button>
+        <button class="tab" onclick="switchTab('reports')">Reports</button>
+      </div>
+      <div class="panel">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">Students Admission</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <button class="btn btn-outline" onclick="showList()">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 12H5M12 19l-7-7 7-7" stroke-width="2" stroke-linecap="round"/></svg>
+            Back
+          </button>
+          <button class="btn btn-outline">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg>
+            Download Receipt
+          </button>
+        </div>
+
+        <div class="detail-grid">
+          <!-- Academic -->
+          <div class="detail-card">
+            <div class="detail-section-title">Academic</div>
+            <div class="detail-row"><span class="detail-key">Admission ID</span><span class="detail-val" id="d-admid">ADI123</span></div>
+            <div class="detail-row"><span class="detail-key">Student Name</span><span class="detail-val" id="d-name">Devanand</span></div>
+            <div class="detail-row"><span class="detail-key">Gender</span><span class="detail-val" id="d-gender">Male</span></div>
+            <div class="detail-row"><span class="detail-key">Date of Birth</span><span class="detail-val" id="d-dob">21-05-2001</span></div>
+            <div class="detail-row"><span class="detail-key">Course</span><span class="detail-val" id="d-course">Loading...</span></div>
+            <div class="detail-row"><span class="detail-key">Admission Date</span><span class="detail-val" id="d-admdate">21-05-2026</span></div>
+            <div class="detail-row"><span class="detail-key">Admission Amount</span><span class="detail-val" id="d-admamt">$25000</span></div>
+          </div>
+          <!-- Payment -->
+          <div class="detail-card">
+            <div class="detail-section-title">Payment</div>
+            <div class="detail-row"><span class="detail-key">Receipt ID</span><span class="detail-val" id="d-receipt">in123</span></div>
+            <div class="detail-row"><span class="detail-key">Paid Amount</span><span class="detail-val" id="d-paid">$12000</span></div>
+            <div class="detail-row"><span class="detail-key">Balance Amount</span><span class="detail-val" id="d-balance">$13000</span></div>
+            <div class="detail-row"><span class="detail-key">Payment Mode</span><span class="detail-val" id="d-mode">Bank Transfer</span></div>
+            <div class="detail-row"><span class="detail-key">Payment Status</span><span class="detail-val"><span id="d-status" class="badge badge-paid">Paid</span></span></div>
+          </div>
+          <!-- Personal -->
+          <div class="detail-card">
+            <div class="detail-section-title">Personal</div>
+            <div class="detail-row"><span class="detail-key">Father's name</span><span class="detail-val" id="d-father">Radhakrishnan</span></div>
+            <div class="detail-row"><span class="detail-key">Mother's name</span><span class="detail-val" id="d-mother">Radha</span></div>
+            <div class="detail-row"><span class="detail-key">Address</span><span class="detail-val" id="d-addr">House No. 12/245, Green Valley Residency, M.G. Road, Kadavanthra, Kochi, Ernakulam, Kerala – 682020</span></div>
+            <div class="detail-row"><span class="detail-key">Mobile Number</span><span class="detail-val" id="d-mobile">6350125686</span></div>
+            <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val" id="d-email">Deva222001@gmail.com</span></div>
+          </div>
+          <!-- Documents -->
+          <div class="detail-card">
+            <div class="detail-section-title">Documents</div>
+            <div class="doc-row">Student Photo <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="doc-row">Birth Certificate <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="doc-row">Previous School TC <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="doc-row">Aadhar Card (Student) <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="doc-row">Parent ID Proof <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="doc-row">Caste / Category Certificate <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-edit" class="view">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2>Edit Admission</h2>
+          <button class="btn btn-outline" onclick="closeEditView()">Back</button>
+        </div>
+
+        <form id="edit-admission-form">
+          <div class="detail-grid">
+            <div class="detail-card">
+              <div class="detail-section-title">Student Information</div>
+              <div class="detail-row"><span class="detail-key">Student Name</span><input id="edit-student-name" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Father Name</span><input id="edit-father-name" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Mother Name</span><input id="edit-mother-name" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Phone</span><input id="edit-phone" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Email</span><input id="edit-email" style="width:100%"></div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-section-title">Financial Information</div>
+              <div class="detail-row"><span class="detail-key">Admission Amount</span><input id="edit-admission-amount" type="number" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Paid Amount</span><input id="edit-paid-amount" type="number" style="width:100%"></div>
+              <div class="detail-row"><span class="detail-key">Balance Amount</span><input id="edit-balance-amount" type="number" style="width:100%" readonly></div>
+              <div class="detail-row"><span class="detail-key">Payment Mode</span><input id="edit-payment-mode" style="width:100%"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn btn-outline" onclick="closeEditView()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Admission</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<script>
+/* ═══════════════════════════════════════════════════
+   API CONFIG  — change BASE_URL to match your Django
+   server (e.g. http://127.0.0.1:8000/api)
+═══════════════════════════════════════════════════ */
+const BASE_URL = 'http://127.0.0.1:8000/api';
+
+const accessToken = localStorage.getItem('access_token') || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzgwNzM1MjY5LCJpYXQiOjE3ODA2NDg4NjksImp0aSI6IjNkN2U2MGRiNzVhZDQwMDFiOTA3Mzc4Zjc3MTkyYzNkIiwidXNlcl9pZCI6IjQiLCJ0b2tlbl92ZXJzaW9uIjoyfQ.EaQYIL9zPmN4MrI0pHUM_qwMKQabJbBXm3r2olat6q8";
+
+const ENDPOINTS = {
+  dashboard  : `${BASE_URL}/finance/dashboard/`,
+  admissions : `${BASE_URL}/finance/admissions/`,
+  admission  : (pk) => `${BASE_URL}/finance/admissions/${pk}/`,
+  update     : (pk) => `${BASE_URL}/finance/admissions/${pk}/update/`,
+  deleteMulti: `${BASE_URL}/finance/admissions/delete/`,
+  courses    : `${BASE_URL}/finance/reports/courses/`,
+  students   : `${BASE_URL}/finance/reports/students/`,
+  teachers   : `${BASE_URL}/finance/reports/teachers/`,
+  revenue    : `${BASE_URL}/finance/reports/revenue/`,
+  admissionExport : `${BASE_URL}/finance/export/admissions/`,
+  studentExport : `${BASE_URL}/finance/export/students/`,
+  teacherExport : `${BASE_URL}/finance/export/teachers/`,
+  revenueExport : `${BASE_URL}/finance/export/revenue/`,
+  profile: `${BASE_URL}/settings/profile/`,
+  profileUpdate: `${BASE_URL}/settings/profile/update/`,
+  changePassword: `${BASE_URL}/settings/change-password/`,
+  logout: `${BASE_URL}/settings/logout/`,
+};
+
+console.log('Dashboard URL:', ENDPOINTS.dashboard);
+console.log('Admissions URL:', ENDPOINTS.admissions);
+console.log('Current Token:', accessToken);
+
+
+/* ── Generic fetch wrapper ── */
+async function apiFetch(url, opts = {}) {
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        ...(opts.headers || {})
+    };
+
+    try {
+        console.log('API Request:', url);
+        console.log('Token:', accessToken);
+
+        const res = await fetch(url, {
+            ...opts,
+            headers,
+            mode: 'cors'
+        });
+
+        if (res.status === 401) {
+            console.error('Unauthorized - Invalid or expired token');
+            throw new Error('HTTP 401');
+        }
+
+        if (res.status === 403) {
+            console.error('Permission denied');
+            throw new Error('HTTP 403');
+        }
+
+        if (res.status === 404) {
+            console.error('Endpoint not found:', url);
+            throw new Error('HTTP 404');
+        }
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Server Error:', errorText);
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        return await res.json();
+    } catch (err) {
+        console.error('API Error:', err);
+        return null;
+    }
+}
+
+/* ── Loading / error helpers ── */
+function setLoading(tbodyId,cols){
+  const el=document.getElementById(tbodyId);
+  if(el) el.innerHTML=`<tr><td colspan="${cols}" style="text-align:center;padding:30px;color:var(--muted);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10" stroke-width="2" stroke-dasharray="30" stroke-dashoffset="10"/></svg>
+    Loading...</td></tr>`;
+}
+function setError(tbodyId,cols,msg='Failed to load data'){
+  const el=document.getElementById(tbodyId);
+  if(el) el.innerHTML=`<tr><td colspan="${cols}" style="text-align:center;padding:30px;color:var(--red);">⚠ ${msg}</td></tr>`;
+}
+// Spinner keyframe
+const _style=document.createElement('style');
+_style.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(_style);
+
+/* ══════════════════════════════════════════════════
+   DASHBOARD STATS  →  GET /finance/dashboard/
+   Expected response:
+   { total_admission, admission_capacity, admission_rate,
+     total_collected, pending_amount }
+══════════════════════════════════════════════════ */
+async function loadDashboard(){
+  const response = await apiFetch(ENDPOINTS.dashboard);
+
+  if (!response || !response.data) {
+      console.log("Dashboard response invalid", response);
+      return;
+  }
+
+const data = response.data;
+  const sa=document.querySelector('.stat-cards');
+  if(!sa) return;
+  const cards=sa.querySelectorAll('.stat-card');
+  // Card 0 – Total Admission
+  if(cards[0]){
+    cards[0].querySelector('.stat-value').textContent=
+      `${data.total_admission||0}/${data.admission_capacity||0}`;
+    const sub=cards[0].querySelector('.stat-sub');
+    if(sub) sub.textContent=`Admission rate ${data.admission_rate||0}%`;
+  }
+  // Card 1 – Total Collected
+  if(cards[1]) cards[1].querySelector('.stat-value').textContent=
+    formatCurrency(data.total_amount_collected || 0);
+  // Card 2 – Pending
+  if(cards[2]) cards[2].querySelector('.stat-value').textContent=
+    formatCurrency(data.pending_amount||0);
+}
+
+/* ══════════════════════════════════════════════════
+   ADMISSIONS LIST  →  GET /finance/admissions/
+   Query params: ?search=&course=&admission_id=&page=
+   Expected response:
+   { count, results:[ {id, admission_id, student_name,
+     course, standard, admission_date, admission_amount,
+     paid_amount, payment_mode, payment_status, ...} ] }
+══════════════════════════════════════════════════ */
+let admPage=1; const admPerPage=10;
+let admTotal=0;
+let admissionCache = {};
+
+async function loadAdmissions(){
+  setLoading('admission-tbody',10);
+  const search =document.getElementById('search-input').value;
+  const course =document.getElementById('filter-course').value;
+  const admid  =document.getElementById('filter-admid').value;
+  const date   =document.getElementById('filter-date').value;
+
+  const params=new URLSearchParams();
+  if(search) params.set('search',search);
+  if(course) params.set('course',course);
+  if(admid)  params.set('admission_id',admid);
+  if(date)   params.set('admission_date',date);
+  params.set('page',admPage);
+
+  const data=await apiFetch(`${ENDPOINTS.admissions}?${params}`);
+  console.log("Admissions API Response:", data);
+  if(!data){setError('admission-tbody',10);return;}
+
+  // Support both paginated {count,results}, nested data, or plain array
+  let rows = [];
+
+  if (Array.isArray(data.results)) {
+      rows = data.results;
+  } else if (data.results && Array.isArray(data.results.data)) {
+      rows = data.results.data;
+  } else if (Array.isArray(data.data)) {
+      rows = data.data;
+  } else if (Array.isArray(data)) {
+      rows = data;
+  }
+
+  admTotal = data.count || rows.length;
+
+  // Cache admissions by id for detail lookup
+  rows.forEach(row => {
+      admissionCache[row.id] = row;
+  });
+  console.log("Admissions API Response:", data);
+  console.log("Parsed Rows:", rows);
+
+  console.log('Parsed Admission Rows:', rows);
+  if (rows.length) {
+      console.log('FIRST ADMISSION ROW', rows[0]);
+  }
+
+  const tbody=document.getElementById('admission-tbody');
+  if(!rows || rows.length === 0){
+    tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted);">No records found</td></tr>`;
+    document.getElementById('adm-pagination').innerHTML='';
+    return;
+  }
+
+  tbody.innerHTML=rows.map(r=>`
+    <tr>
+      <td><input type="checkbox" class="row-cb" data-id="${r.id}"/></td>
+      <td>${r.admission_id||r.id}</td>
+      <td>${r.student_name || r.fullname || r.user_name || r.user_fullname || (r.user && r.user.fullname) || r.name || '-'}</td>
+      <td>${r.course||''}<div class="course-sub">${r.standard||''}</div></td>
+      <td>${formatDate(r.admission_date)}</td>
+      <td>${formatCurrency(r.admission_amount)}</td>
+      <td>${formatCurrency(r.paid_amount)}</td>
+      <td>${r.payment_mode||''}</td>
+      <td>${badge(r.payment_status)}</td>
+      <td><div class="action-btns">
+        <button class="icon-btn" onclick="openDetail(${r.id})" title="View">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+        </button>
+        <button class="icon-btn edit" onclick="showAddAdmission(${r.id})" title="Edit">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke-width="2"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2"/></svg>
+        </button>
+      </div></td>
+    </tr>`).join('');
+
+  renderPagination('adm-pagination',admTotal,admPerPage,admPage,p=>{admPage=p;loadAdmissions();});
+}
+
+/* Debounce for search */
+let _admDebounce;
+function filterTable(){
+  clearTimeout(_admDebounce);
+  _admDebounce=setTimeout(()=>{admPage=1;loadAdmissions();},350);
+}
+
+function toggleSelectAll(cb){
+  document.querySelectorAll('.row-cb').forEach(c=>c.checked=cb.checked);
+}
+
+/* ── DELETE MULTIPLE  →  DELETE /finance/admissions/delete/
+   Body: { ids: [1,2,3] }
+── */
+async function deleteSelected(){
+  const ids=[...document.querySelectorAll('.row-cb:checked')].map(c=>c.dataset.id);
+  if(!ids.length){alert('Select at least one record to delete.');return;}
+  if(!confirm(`Delete ${ids.length} record(s)?`)) return;
+  const res=await apiFetch(ENDPOINTS.deleteMulti,{
+    method:'DELETE',
+    body:JSON.stringify({ids})
+  });
+  if(res!==null){
+    showToast(`${ids.length} record(s) deleted`,'success');
+    admPage=1; loadAdmissions(); loadDashboard();
+  }else{
+    showToast('Delete failed','error');
+  }
+}
+// Wire up delete buttons
+document.querySelectorAll('.btn-delete').forEach(btn=>{
+  if(btn.closest('#tab-content-admission')) btn.addEventListener('click',deleteSelected);
+});
+
+
+async function loadCourseChoices() {
+    const data = await apiFetch(ENDPOINTS.courses);
+
+    const select = document.getElementById('filter-course');
+
+    const courses = [...new Set(
+        (data.results?.data || data.results || data)
+        .map(x => x.course_name)
+    )];
+
+    select.innerHTML =
+      '<option value="">All Course</option>' +
+      courses.map(c =>
+        `<option value="${c}">${c}</option>`
+      ).join('');
+}
+
+async function loadAdmissionChoices() {
+
+    const data = await apiFetch(ENDPOINTS.admissions);
+
+    const rows =
+      data.results?.data ||
+      data.results ||
+      [];
+
+    const select =
+      document.getElementById('filter-admid');
+
+    select.innerHTML =
+      '<option value="">All Admission ID</option>';
+
+    rows.forEach(r => {
+        select.innerHTML +=
+        `<option value="${r.admission_id}">
+            ${r.admission_id}
+        </option>`;
+    });
+}
+
+/* ══════════════════════════════════════════════════
+   ADMISSION DETAIL  →  GET /finance/admissions/<pk>/
+   Expected response: full admission object with
+   personal, academic, payment, documents fields
+══════════════════════════════════════════════════ */
+async function openDetail(pk){
+
+    document.getElementById('view-finance').classList.remove('active');
+    document.getElementById('view-detail').classList.add('active');
+
+    const response = await apiFetch(ENDPOINTS.admission(pk));
+
+    console.log("DETAIL RESPONSE:", response);
+
+    if(!response || !response.data){
+        showToast("Failed to load details","error");
+        return;
+    }
+
+    const data = response.data;
+
+    console.log('DETAIL DATA', data);
+    console.log('PERSONAL DATA', data.personal_details || {});
+
+    const academic = data.academic_details || {};
+    const personal = data.personal_details || {};
+    const financial = data.financial_details || {};
+
+    setText("d-admid", academic.admission_id || admissionCache[pk]?.admission_id || "");
+    setText(
+        "d-name",
+        data.student_name ||
+        data.fullname ||
+        data.user_name ||
+        data.user?.fullname ||
+        personal.student_name ||
+        admissionCache[pk]?.student_name ||
+        admissionCache[pk]?.fullname ||
+        admissionCache[pk]?.user_name ||
+        '-'
+    );
+    setText("d-gender", personal.gender || "");
+    setText("d-dob", formatDate(personal.dob));
+
+    // Course name logic (refactored and replaced)
+    const cachedAdmission = admissionCache[pk] || {};
+
+    const courseName =
+        data.course_name ||
+        academic.course_name ||
+        cachedAdmission.course_name ||
+        cachedAdmission.course ||
+        'N/A';
+
+    setText('d-course', courseName);
+
+    setText("d-admdate", formatDate(academic.admission_date));
+
+    setText("d-admamt", formatCurrency(financial.admission_amount));
+
+    setText("d-receipt", academic.admission_id || "");
+
+    setText("d-paid", formatCurrency(financial.paid_amount));
+
+    setText("d-balance",
+        formatCurrency(financial.balance_amount)
+    );
+
+    setText("d-mode", financial.payment_mode || "");
+
+    setText(
+        "d-father",
+        personal.father_name ||
+        personal.father_full_name ||
+        personal.parent_guardian_name ||
+        ''
+    );
+
+    setText(
+        'd-mother',
+        personal.mother_name ||
+        personal.mothers_name ||
+        personal.mother_full_name ||
+        personal.mother ||
+        data.mother_name ||
+        data.mothers_name ||
+        data.mother ||
+        '-'
+    );
+
+    setText(
+        "d-addr",
+        personal.address || ""
+    );
+
+    setText(
+        'd-mobile',
+        data.phone_number ||
+        personal.phone_number ||
+        personal.mobile_number ||
+        ''
+    );
+
+    setText(
+        'd-email',
+        data.email ||
+        personal.email ||
+        ''
+    );
+
+    const statusEl =
+        document.getElementById("d-status");
+
+    if(statusEl){
+
+        statusEl.textContent =
+            financial.balance_amount > 0
+            ? "Pending"
+            : "Paid";
+
+        statusEl.className =
+            financial.balance_amount > 0
+            ? "badge badge-pending"
+            : "badge badge-paid";
+    }
+}
+
+
+function showList(){
+  document.getElementById('view-finance').classList.add('active');
+  document.getElementById('view-detail').classList.remove('active');
+}
+
+
+async function showAddAdmission(id = null) {
+
+    if (!id) {
+        showToast('Create admission form not implemented yet', 'error');
+        return;
+    }
+
+    const response = await apiFetch(ENDPOINTS.admission(id));
+
+    if (!response || !response.data) {
+        showToast('Unable to load admission', 'error');
+        return;
+    }
+
+    const data = response.data;
+
+    document.getElementById('view-finance').classList.remove('active');
+    document.getElementById('view-detail').classList.remove('active');
+    document.getElementById('view-edit').classList.add('active');
+
+    window.currentAdmissionId = id;
+
+    document.getElementById('edit-student-name').value = data.student_name || '';
+    document.getElementById('edit-father-name').value =
+        data.personal_details?.father_name ||
+        data.personal_details?.father_full_name ||
+        data.personal_details?.parent_guardian_name ||
+        data.father_name ||
+        '';
+
+    document.getElementById('edit-mother-name').value =
+        data.personal_details?.mother_name ||
+        data.personal_details?.mothers_name ||
+        data.personal_details?.mother_full_name ||
+        data.mother_name ||
+        data.mothers_name ||
+        '';
+
+    document.getElementById('edit-phone').value = data.phone_number || data.personal_details?.phone_number || '';
+    document.getElementById('edit-email').value = data.email || '';
+
+    document.getElementById('edit-admission-amount').value = data.financial_details?.admission_amount || '';
+    document.getElementById('edit-paid-amount').value = data.financial_details?.paid_amount || '';
+    document.getElementById('edit-balance-amount').value = data.financial_details?.balance_amount || '';
+    document.getElementById('edit-payment-mode').value = data.financial_details?.payment_mode || '';
+
+    setTimeout(calculateBalance, 100);
+}
+
+async function updateAdmission(pk, payload){
+
+    const response = await apiFetch(
+        ENDPOINTS.update(pk),
+        {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        }
+    );
+
+    if(response){
+        showToast('Admission updated successfully');
+        if (response.data) {
+
+          admissionCache[pk] = {
+              ...(admissionCache[pk] || {}),
+              ...response.data
+          };
+      }
+        loadAdmissions();
+        loadDashboard();
+    }else{
+        showToast('Update failed','error');
+    }
+
+    return response;
+}
+
+function closeEditView(){
+    document.getElementById('view-edit').classList.remove('active');
+    document.getElementById('view-finance').classList.add('active');
+}
+
+function calculateBalance(){
+    const admission = Number(document.getElementById('edit-admission-amount')?.value || 0);
+    const paid = Number(document.getElementById('edit-paid-amount')?.value || 0);
+    const balance = admission - paid;
+
+    const balanceField = document.getElementById('edit-balance-amount');
+    if(balanceField){
+        if (document.activeElement !== balanceField) {
+        balanceField.value = balance;
+        }
+    }
+}
+
+document.addEventListener('input', function(e){
+    if(
+        e.target.id === 'edit-admission-amount' ||
+        e.target.id === 'edit-paid-amount'
+    ){
+        calculateBalance();
+    }
+});
+
+document.addEventListener('submit', async function(e){
+
+    if(e.target.id !== 'edit-admission-form') return;
+
+    e.preventDefault();
+
+    const admissionAmount = Number(document.getElementById('edit-admission-amount').value || 0);
+    const paidAmount = Number(document.getElementById('edit-paid-amount').value || 0);
+    const balanceAmount =
+    Number(
+        document.getElementById(
+            'edit-balance-amount'
+        ).value
+    );
+
+    document.getElementById('edit-balance-amount').value = balanceAmount;
+
+    const paymentStatus = balanceAmount <= 0 ? 'Paid' : 'Pending';
+
+    const payload = {
+
+      fullname:
+          document.getElementById('edit-student-name').value,
+
+      email:
+          document.getElementById('edit-email').value,
+
+      phone_number:
+          document.getElementById('edit-phone').value,
+
+      personal_details: {
+
+          father_name:
+              document.getElementById('edit-father-name').value,
+
+          mother_name:
+              document.getElementById('edit-mother-name').value
+      },
+
+      financial_details: {
+
+          admission_amount:
+              document.getElementById('edit-admission-amount').value,
+
+          paid_amount:
+              document.getElementById('edit-paid-amount').value,
+
+          balance_amount:
+              document.getElementById('edit-balance-amount').value,
+
+          payment_mode:
+              document.getElementById('edit-payment-mode').value,
+
+          payment_status:
+              paymentStatus
+      }
+  };
+
+    await updateAdmission(window.currentAdmissionId, payload);
+    closeEditView();
+    loadAdmissions();
+});
+
+/* ══════════════════════════════════════════════════
+   COURSE REPORT  →  GET /finance/reports/courses/
+   Query params: ?course=&batch=&search=&page=
+   Expected response:
+   { count, results:[ {course, standard, duration,
+     active_students, completed_students,
+     revenue_generated, pending_fees,
+     total_teachers, batch, status} ] }
+══════════════════════════════════════════════════ */
+let crPage=1; const crPerPage=7; let crTotal=0;
+
+async function loadCourseReport(){
+  setLoading('course-tbody',9);
+  const course=document.getElementById('cr-course').value;
+  const batch =document.getElementById('cr-batch').value;
+  const search=document.querySelector('#tab-content-reports .search-bar input')?.value||'';
+
+  const params=new URLSearchParams();
+  if(course) params.set('course',course);
+  if(batch)  params.set('batch',batch);
+  if(search) params.set('search',search);
+  params.set('page',crPage);
+
+
+  const data=await apiFetch(`${ENDPOINTS.courses}?${params}`);
+  if(!data){setError('course-tbody',9);return;}
+
+  const rows =
+      data.results?.data ||
+      data.results ||
+      data.data ||
+      [];
+  crTotal=data.count||rows.length;
+
+  const tbody=document.getElementById('course-tbody');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No records found</td></tr>`;
+    document.getElementById('cr-pagination').innerHTML=`<span style="font-size:12px;color:var(--muted)">Showing 0 of 0 Courses</span>`;
+    return;
+  }
+
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td>${r.course_name || ''}</td>
+  <td>${r.duration || ''}</td>
+  <td>${r.total_students || 0}</td>
+  <td>${r.completed_students || 0}</td>
+  <td>${formatCurrency(r.revenue_generated)}</td>
+  <td>${formatCurrency(r.pending_fees)}</td>
+  <td>${r.total_teachers || 0}</td>
+  <td>${r.batch || ''}</td>
+  <td>${badge(r.status)}</td>
+  </tr>`).join('');
+
+  const pag=document.getElementById('cr-pagination');
+  pag.innerHTML=`<span style="margin-right:auto;font-size:12px;color:var(--muted)">Showing ${rows.length} of ${crTotal} Courses</span>`;
+  renderPagination('cr-pagination',crTotal,crPerPage,crPage,p=>{crPage=p;loadCourseReport();},true);
+}
+
+let _crDebounce;
+function filterCourseTable(s){
+  clearTimeout(_crDebounce);
+  _crDebounce=setTimeout(()=>{crPage=1;loadCourseReport();},350);
+}
+
+/* ══════════════════════════════════════════════════
+   STUDENT REPORT  →  GET /finance/reports/students/
+   Query params: ?course=&batch=&gender=&search=&page=
+   Expected response:
+   { count, results:[ {course, standard, student_name,
+     admission_number, gender, collected_fees,
+     attendance_percentage, batch, parent_number, status} ] }
+══════════════════════════════════════════════════ */
+let srPage=1; const srPerPage=7; let srTotal=0;
+
+async function loadStudentReport(){
+  setLoading('sr-tbody',9);
+  const course =document.getElementById('sr-course').value;
+  const batch  =document.getElementById('sr-batch').value;
+  const gender =document.getElementById('sr-gender').value;
+  const search =document.querySelector('#tab-content-reports .panel:nth-child(2) .search-bar input')?.value||'';
+
+  const params=new URLSearchParams();
+  if(course)  params.set('course',course);
+  if(batch)   params.set('batch',batch);
+  if(gender)  params.set('gender',gender);
+  if(search)  params.set('search',search);
+  params.set('page',srPage);
+
+
+  const data=await apiFetch(`${ENDPOINTS.students}?${params}`);
+  if(!data){setError('sr-tbody',9);return;}
+
+  const rows =
+    data.results?.data ||
+    data.results ||
+    data.data ||
+    [];
+  srTotal=data.count||rows.length;
+
+  const tbody=document.getElementById('sr-tbody');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No records found</td></tr>`;
+    document.getElementById('sr-pagination').innerHTML='';
+    return;
+  }
+  tbody.innerHTML=rows.map(r=>`<tr>
+  <td>${r.course||''}</td>
+  <td>${r.fullname||''}</td>
+  <td>${r.admission_id||''}</td>
+  <td>${r.gender||''}</td>
+  <td>${formatCurrency(r.collected_fees)}</td>
+  <td>${r.attendance_percentage||'N/A'}</td>
+  <td>${r.batch||''}</td>
+  <td>${r.parent_number||''}</td>
+  <td>${badge(r.student_status||'Active')}</td>
+  </tr>`).join('');
+    renderPagination('sr-pagination',srTotal,srPerPage,srPage,p=>{srPage=p;loadStudentReport();});
+  }
+
+let _srDebounce;
+function filterStudentReport(s){
+    clearTimeout(_srDebounce);
+    _srDebounce=setTimeout(()=>{srPage=1;loadStudentReport();},350);
+  }
+
+/* ══════════════════════════════════════════════════
+   TEACHER REPORT  →  GET /finance/reports/teachers/
+   Query params: ?course=&batch=&gender=&search=&page=
+   Expected response:
+   { count, results:[ {teacher_id, teacher_name,
+     joined_date, gender, salary, attendance_percentage,
+     incharge_classes, teacher_number, status} ] }
+══════════════════════════════════════════════════ */
+let trPage=1; const trPerPage=7; let trTotal=0;
+
+async function loadTeacherReport(){
+  setLoading('tr-tbody',9);
+  const course =document.getElementById('tr-course').value;
+  const batch  =document.getElementById('tr-batch').value;
+  const gender =document.getElementById('tr-gender').value;
+  const search =document.querySelector('#tab-content-reports .panel:nth-child(3) .search-bar input')?.value||'';
+
+  const params=new URLSearchParams();
+  if(course)  params.set('course',course);
+  if(batch)   params.set('batch',batch);
+  if(gender)  params.set('gender',gender);
+  if(search)  params.set('search',search);
+  params.set('page',trPage);
+
+  const data=await apiFetch(`${ENDPOINTS.teachers}?${params}`);
+  if(!data){setError('tr-tbody',9);return;}
+
+  const rows =
+    data.results?.data ||
+    data.results ||
+    data.data ||
+    [];
+  trTotal=data.count||rows.length;
+
+  const tbody=document.getElementById('tr-tbody');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);">No records found</td></tr>`;
+    document.getElementById('tr-pagination').innerHTML='';
+    return;
+  }
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td>${r.teacher_id||''}</td>
+    <td>${r.teacher_name||''}</td>
+    <td>${formatDate(r.joined_date)}</td>
+    <td>${r.gender||''}</td>
+    <td>${formatCurrency(r.salary)}</td>
+    <td>${r.attendance_percentage??''}%</td>
+    <td>${r.incharge_class || '-'}</td>
+    <td>${r.teacher_number||''}</td>
+    <td>${badge(r.status)}</td>
+  </tr>`).join('');
+  renderPagination('tr-pagination',trTotal,trPerPage,trPage,p=>{trPage=p;loadTeacherReport();});
+}
+
+let _trDebounce;
+function filterTeacherReport(s){
+  clearTimeout(_trDebounce);
+  _trDebounce=setTimeout(()=>{trPage=1;loadTeacherReport();},350);
+}
+
+/* ══════════════════════════════════════════════════
+   REVENUE REPORT  →  GET /finance/reports/revenue/
+   Query params: ?year=
+   Expected response:
+   { months:['Jan',...], admission_revenue:[...],
+     fee_collection:[...], salary_expenses:[...] }
+   — OR —
+   { data:[ {month, admission_revenue, fee_collection,
+             salary_expenses} ] }
+══════════════════════════════════════════════════ */
+let _revenueData=null;
+
+async function loadRevenueChart(year=''){
+  const params = year ? `?year=${year}` : '';
+  const response = await apiFetch(`${ENDPOINTS.revenue}${params}`);
+
+  if(!response || !response.data) return;
+
+  const d = response.data;
+
+  drawChart({
+      months:['Revenue'],
+      admission:[Number(d.total_admission_revenue || 0)],
+      fees:[Number(d.total_fee_collection || 0)],
+      salary:[Number(d.total_salary_expense || 0)]
+  });
+}
+
+/* Year filter for revenue */
+document.querySelector('.year-select')?.addEventListener('change',function(){
+  loadRevenueChart(this.value);
+});
+
+/* ══════════════════════════════════════════════════
+   CHART RENDERER
+══════════════════════════════════════════════════ */
+function drawChart(d){
+  const canvas=document.getElementById('barChart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const months   = d ? d.months    : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const admission= d ? d.admission : [700,650,800,750,900,850,780,820,760,810,740,870];
+  const fees     = d ? d.fees      : [500,480,600,550,700,650,580,620,560,610,540,670];
+  const salary   = d ? d.salary    : [300,310,320,300,330,310,320,310,300,320,305,315];
+
+  canvas.width=canvas.parentElement.clientWidth-48;
+  canvas.height=200;
+  const W=canvas.width,H=canvas.height,pad=40,gW=W-pad*2;
+  const barW=gW/months.length/4, gap=gW/months.length;
+  ctx.clearRect(0,0,W,H);
+
+  const maxVal=Math.max(...admission,...fees,...salary,100)*1.15;
+  const gridStep=Math.ceil(maxVal/4/100)*100;
+
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+  for(let v=0;v<=maxVal;v+=gridStep){
+    const y=H-pad-(v/maxVal)*(H-pad*1.5);
+    ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='11px DM Sans';ctx.textAlign='right';
+    ctx.fillText(v>=1000?(v/1000).toFixed(0)+'k':v,pad-6,y+4);
+  }
+
+  months.forEach((m,i)=>{
+    const x=pad+i*gap+gap/2;
+    const cols=['#3b82f6','#22c55e','#94a3b8'];
+    [admission,fees,salary].forEach((data,j)=>{
+      const bx=x+(j-1)*(barW+2)-barW/2;
+      const bh=((data[i]||0)/maxVal)*(H-pad*1.5);
+      ctx.fillStyle=cols[j];
+      ctx.beginPath();
+      ctx.roundRect(bx,H-pad-bh,barW,bh,3);
+      ctx.fill();
+    });
+    ctx.fillStyle='#64748b';ctx.font='11px DM Sans';ctx.textAlign='center';
+    ctx.fillText(m,x,H-10);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════ */
+function switchTab(tab){
+  ['payroll','admission','reports'].forEach(t=>{
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+    document.getElementById(`tab-content-${t}`).style.display=t===tab?'block':'none';
+  });
+  const header=document.getElementById('finance-header');
+  if(header) header.style.display=tab==='admission'?'block':'none';
+
+  // Lazy-load reports on first open
+  if(tab==='reports'){
+    loadCourseReport();
+    loadStudentReport();
+    loadTeacherReport();
+    setTimeout(()=>loadRevenueChart(),100);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   PAGINATION
+══════════════════════════════════════════════════ */
+function renderPagination(id,total,perPage,current,cb,append=false){
+  const pages=Math.ceil(total/perPage);
+  if(pages<=1) return;
+  const el=document.getElementById(id);
+  let html=append?el.innerHTML:'';
+  html+=`<button class="page-btn" onclick="(${cb})(${Math.max(1,current-1)})">‹</button>`;
+  for(let i=1;i<=pages;i++){
+    if(pages>7 && i>2 && i<pages-1 && Math.abs(i-current)>1){
+      if(i===3||i===pages-2) html+=`<span style="padding:0 4px;color:var(--muted)">…</span>`;
+      continue;
+    }
+    html+=`<button class="page-btn${i===current?' active':''}" onclick="(${cb})(${i})">${i}</button>`;
+  }
+  html+=`<button class="page-btn" onclick="(${cb})(${Math.min(pages,current+1)})">›</button>`;
+  el.innerHTML=html;
+}
+
+/* ══════════════════════════════════════════════════
+   UTILITY HELPERS
+══════════════════════════════════════════════════ */
+function badge(status){
+  const s=(status||'').toLowerCase().replace(/\s+/g,'');
+  const map={paid:'badge-paid',pending:'badge-pending',failed:'badge-failed',
+    active:'badge-active',inactive:'badge-inactive',
+    dropout:'badge-dropout','drop out':'badge-dropout',resign:'badge-resign'};
+  const cls=map[s]||map[status]||'badge-inactive';
+  return `<span class="badge ${cls}">${status||''}</span>`;
+}
+
+function formatCurrency(val){
+  if(val===null||val===undefined||val==='') return '—';
+  const n=parseFloat(val);
+  if(isNaN(n)) return val;
+  return '$'+n.toLocaleString('en-IN');
+}
+
+function formatDate(val){
+  if(!val) return '—';
+  // Already formatted dd-mm-yyyy
+  if(/^\d{2}-\d{2}-\d{4}$/.test(val)) return val;
+  // ISO yyyy-mm-dd
+  const d=new Date(val);
+  if(isNaN(d)) return val;
+  return d.toLocaleDateString('en-GB').replace(/\//g,'-');
+}
+
+function setText(id,val){
+  const el=document.getElementById(id);
+  if(el) el.textContent=val;
+}
+
+async function downloadExcel(url, filename) {
+
+    const response = await fetch(url, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+
+    if (!response.ok) {
+        showToast('Export failed', 'error');
+        return;
+    }
+
+    const blob = await response.blob();
+
+    const link = document.createElement('a');
+
+    link.href = window.URL.createObjectURL(blob);
+
+    link.download = filename;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    showToast('Export downloaded');
+}
+
+async function downloadAdmissions() {
+
+    console.log("DOWNLOAD STARTED");
+
+    try {
+
+        const response = await fetch(
+            ENDPOINTS.admissionExport,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        );
+
+        console.log("RESPONSE =", response);
+
+        if (!response.ok) {
+
+            console.log("EXPORT FAILED");
+
+            showToast('Export failed', 'error');
+            return;
+        }
+
+        const blob = await response.blob();
+
+        console.log("BLOB SIZE =", blob.size);
+
+        const downloadUrl =
+            window.URL.createObjectURL(blob);
+
+        console.log("DOWNLOAD URL CREATED");
+
+        const link =
+            document.createElement('a');
+
+        link.href = downloadUrl;
+        link.download = 'Admissions_Report.xlsx';
+
+        document.body.appendChild(link);
+
+        console.log("CLICKING DOWNLOAD");
+
+        link.click();
+
+        console.log("DOWNLOAD CLICKED");
+
+        document.body.removeChild(link);
+
+        showToast('Admissions report downloaded');
+
+        console.log("TOAST CALLED");
+
+    } catch (error) {
+
+        console.error("DOWNLOAD ERROR =", error);
+
+        showToast('Download failed', 'error');
+    }
+}
+
+function downloadStudentReport() {
+
+    downloadExcel(
+        ENDPOINTS.studentExport,
+        'Students_Report.xlsx'
+    );
+}
+
+function downloadTeacherReport() {
+
+    downloadExcel(
+        ENDPOINTS.teacherExport,
+        'Teachers_Report.xlsx'
+    );
+}
+
+function downloadRevenueReport() {
+
+    const year =
+        document.querySelector('.year-select')?.value;
+
+    let url =
+        ENDPOINTS.revenueExport;
+
+    if (
+        year &&
+        year !== 'All Year'
+    ) {
+        url += `?year=${year}`;
+    }
+
+    downloadExcel(
+        url,
+        'Revenue_Report.xlsx'
+    );
+}
+
+/* ── Toast notification ── */
+function showToast(msg,type='success'){
+  let t=document.getElementById('_toast');
+  if(!t){
+    t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;bottom:28px;right:28px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transition:opacity .3s;box-shadow:0 4px 16px rgba(0,0,0,.15)';
+    document.body.appendChild(t);
+  }
+  t.style.background=type==='success'?'#22c55e':'#ef4444';
+  t.style.color='#fff';t.style.opacity='1';
+  t.textContent=msg;
+  clearTimeout(t._to);
+  t._to=setTimeout(()=>t.style.opacity='0',2800);
+}
+
+/* ── Nav highlight ── */
+function setNav(el,name){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+
+  if(name === 'settings'){
+
+      document.getElementById(
+          'view-finance'
+      ).classList.remove('active');
+
+      document.getElementById(
+          'view-detail'
+      ).classList.remove('active');
+
+      document.getElementById(
+          'view-edit'
+      ).classList.remove('active');
+
+      document.getElementById(
+          'view-settings'
+      ).classList.add('active');
+
+      loadProfile();
+
+      return;
+  }
+
+  document.getElementById('view-finance').classList.add('active');
+}
+
+async function loadProfile() {
+
+    console.log("LOADING PROFILE");
+
+    const response = await apiFetch(
+        ENDPOINTS.profile
+    );
+
+    console.log("PROFILE RESPONSE =", response);
+
+    if (!response || !response.data) {
+        console.error("PROFILE DATA NOT FOUND");
+        return;
+    }
+
+    const profileImage =
+      document.getElementById(
+          "settings-profile-preview"
+      );
+
+  if (
+      profileImage &&
+      d.profile_photo
+  ) {
+
+      profileImage.src =
+          d.profile_photo;
+
+      profileImage.style.display =
+          "block";
+  }
+
+    const d = response.data;
+
+    console.log("PROFILE DATA =", d);
+
+    document.getElementById(
+        "settings-fullname"
+    ).value = d.fullname || "";
+
+    document.getElementById(
+        "settings-email"
+    ).value = d.email || "";
+
+    document.getElementById(
+        "settings-phone"
+    ).value = d.phone_number || "";
+
+    document.getElementById(
+        "settings-address"
+    ).value = d.address || "";
+
+    document.getElementById(
+        "settings-gender"
+    ).value = d.gender || "";
+
+    document.getElementById(
+        "settings-role"
+    ).textContent = d.role || "-";
+
+    document.getElementById(
+        "settings-employee-id"
+    ).textContent = d.employee_id || "-";
+
+    document.getElementById(
+        "settings-assigned-by"
+    ).textContent = d.assigned_by || "-";
+
+    document.getElementById(
+        "settings-account-created"
+    ).textContent = d.account_created || "-";
+
+    document.getElementById(
+        "settings-status"
+    ).textContent = d.status || "-";
+}
+
+async function updateProfile(){
+  const formData = new FormData();
+
+  formData.append('fullname', document.getElementById('settings-fullname').value);
+  formData.append('email', document.getElementById('settings-email').value);
+  formData.append('phone_number', document.getElementById('settings-phone').value);
+  formData.append('address', document.getElementById('settings-address').value);
+  formData.append('gender', document.getElementById('settings-gender').value);
+
+  const photo = document.getElementById('settings-photo').files[0];
+  if(photo){
+    formData.append('profile_photo', photo);
+  }
+
+  const response = await fetch(ENDPOINTS.profileUpdate, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: formData
+  });
+
+  if(response.ok){
+    showToast('Profile updated successfully');
+    loadProfile();
+  }else{
+    showToast('Profile update failed','error');
+  }
+}
+
+async function changePassword(){
+  const response = await apiFetch(ENDPOINTS.changePassword, {
+    method:'POST',
+    body: JSON.stringify({
+      current_password: document.getElementById('current-password').value,
+      new_password: document.getElementById('new-password').value,
+      confirm_password: document.getElementById('confirm-password').value
+    })
+  });
+
+  if(response?.status){
+    showToast('Password changed successfully');
+  }else{
+    showToast('Password change failed','error');
+  }
+}
+
+async function logoutUser(){
+  await apiFetch(ENDPOINTS.logout,{method:'POST',body:JSON.stringify({})});
+
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+
+  showToast('Logged out successfully');
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+(async function init(){
+  await loadDashboard();
+  await loadCourseChoices();
+  await loadAdmissionChoices();
+  switchTab('admission');
+  loadAdmissions();
+  // Chart drawn with fallback data; will update when Reports tab is opened
+  setTimeout(()=>drawChart(null),100);
+  window.addEventListener('resize',()=>drawChart(_revenueData));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings -  Slam Track</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --sidebar-bg: #1a2b6b;
+    --sidebar-active: #2d3e8a;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-500: #64748b;
+    --gray-700: #334155;
+    --gray-900: #0f172a;
+    --green: #16a34a;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --green-light: #dcfce7;
+    --font: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-900); display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; min-height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo-icon { width: 36px; height: 36px; background: var(--white); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 22px; height: 22px; }
+  .logo-text { color: var(--white); }
+  .logo-text .brand { font-weight: 700; font-size: 14px; line-height: 1.2; }
+  .logo-text .sub { font-size: 11px; opacity: 0.6; }
+  .sidebar-nav { flex: 1; padding: 12px 0; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 18px; color: rgba(255,255,255,0.75); font-size: 13.5px; font-weight: 500; cursor: pointer; border-radius: 0; transition: background 0.15s; text-decoration: none; }
+  .nav-item:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+  .nav-item.active { background: var(--sidebar-active); color: var(--white); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* TOPBAR */
+  .topbar { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-school { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; color: var(--gray-900); }
+  .topbar-school svg { width: 16px; height: 16px; color: var(--gray-500); }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .bell-btn { background: none; border: none; cursor: pointer; color: var(--gray-500); display: flex; align-items: center; padding: 4px; border-radius: 6px; }
+  .bell-btn:hover { background: var(--gray-100); }
+  .user-pill { display: flex; align-items: center; gap: 8px; border: 1px solid var(--gray-200); border-radius: 8px; padding: 4px 10px 4px 4px; cursor: pointer; background: var(--white); }
+  .avatar { width: 30px; height: 30px; background: var(--gray-700); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; }
+  .user-pill span { font-size: 13px; font-weight: 500; }
+  .user-pill svg { width: 14px; height: 14px; color: var(--gray-500); }
+
+  /* PAGE CONTENT */
+  .content { padding: 28px; flex: 1; overflow-y: auto; }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+  .page-desc { font-size: 13px; color: var(--gray-500); margin-bottom: 22px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--gray-100); border-radius: 8px; padding: 4px; width: fit-content; margin-bottom: 24px; }
+  .tab-btn { padding: 7px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; background: transparent; color: var(--gray-500); transition: all 0.15s; font-family: var(--font); }
+  .tab-btn.active { background: var(--gray-900); color: var(--white); }
+  .tab-btn:hover:not(.active) { background: var(--gray-200); color: var(--gray-700); }
+
+  /* TAB PANELS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; padding: 24px; margin-bottom: 18px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+
+  /* PROFILE AVATAR AREA */
+  .profile-avatar-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+  .profile-avatar { width: 80px; height: 80px; background: var(--gray-200); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .profile-avatar svg { width: 44px; height: 44px; color: var(--gray-400); }
+
+  /* FIELDS GRID */
+  .fields-grid { display: grid; grid-template-columns: 160px 1fr; gap: 12px 0; }
+  .field-label { font-size: 13px; color: var(--gray-500); font-weight: 500; padding: 2px 0; }
+  .field-value { font-size: 13px; color: var(--gray-900); font-weight: 500; }
+  .field-value.green { color: var(--green); font-weight: 600; }
+  .section-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 14px; }
+  .divider { border: none; border-top: 1px solid var(--gray-100); margin: 18px 0; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-outline { background: white; color: var(--red); border: 1px solid var(--red); }
+  .btn-outline:hover { background: var(--red-light); }
+  .btn-ghost { background: white; color: var(--gray-700); border: 1px solid var(--gray-300); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+  /* PASSWORD FIELDS */
+  .pw-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pw-field { position: relative; flex: 1; min-width: 160px; }
+  .pw-field input { width: 100%; padding: 9px 36px 9px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font); color: var(--gray-900); background: white; outline: none; }
+  .pw-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .pw-field input::placeholder { color: var(--gray-300); }
+  .pw-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--gray-400); display: flex; }
+
+  /* SECURITY TAB */
+  .staff-filter { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 18px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--gray-700); }
+  .form-input, .form-select { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font); color: var(--gray-900); background: white; outline: none; }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+  /* STAFF CARD */
+  .staff-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--gray-50); border-radius: 10px; margin-bottom: 14px; }
+  .staff-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gray-200); }
+  .staff-info { flex: 1; }
+  .staff-id-text { font-size: 12px; color: var(--gray-500); margin-bottom: 2px; }
+  .staff-name-text { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
+  .temp-pw-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .temp-pw-label { color: var(--gray-500); }
+  .temp-pw-link { color: var(--accent); font-weight: 500; text-decoration: none; cursor: pointer; }
+  .temp-pw-link:hover { text-decoration: underline; }
+  .pw-expires { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+  .pw-expires span { color: var(--red); font-weight: 600; }
+
+  /* SESSION */
+  .session-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: #3b5bdb; color: white; }
+  thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12.5px; }
+  tbody tr { border-bottom: 1px solid var(--gray-100); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; color: var(--gray-700); }
+  .status-active { color: var(--green); font-weight: 600; font-size: 12px; }
+  .status-ago { color: var(--gray-500); font-size: 12px; }
+  .action-link { color: var(--red); font-weight: 600; font-size: 12px; cursor: pointer; background: none; border: none; font-family: var(--font); }
+  .action-link:hover { text-decoration: underline; }
+  .session-actions { display: flex; gap: 12px; margin-top: 12px; }
+  .btn-force { color: var(--red); border: 1px solid var(--red); background: white; padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+  .btn-force:hover { background: var(--red-light); }
+  .btn-logout-all { color: var(--red); background: none; border: none; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font); text-decoration: underline; }
+  .btn-logout-all:hover { opacity: 0.75; }
+
+  /* LOGIN HISTORY */
+  .history-filters { display: flex; gap: 12px; margin-bottom: 14px; align-items: end; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+  .badge-success { background: var(--green-light); color: var(--green); }
+  .badge-fail { background: var(--red-light); color: var(--red); }
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+  .page-btns {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .page-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--gray-200); background: white; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font); color: var(--gray-700); }
+  .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .page-btn:hover:not(.active) { background: var(--gray-100); }
+  .page-nav { padding: 6px 12px; border: 1px solid var(--gray-200); background: white; border-radius: 6px; font-size: 12.5px; cursor: pointer; font-family: var(--font); color: var(--gray-700); }
+  .page-nav:hover { background: var(--gray-100); }
+  .page-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  #pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* FINANCE TAB */
+  .finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fee-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+  .fee-item:last-child { border-bottom: none; }
+  .fee-label { font-size: 13px; color: var(--gray-700); }
+  .fee-value { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .toggle-switch { position: relative; display: inline-block; width: 38px; height: 21px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--gray-300); border-radius: 21px; transition: 0.2s; }
+  .toggle-slider:before { position: absolute; content: ""; height: 15px; width: 15px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+  input:checked + .toggle-slider { background: var(--accent); }
+  input:checked + .toggle-slider:before { transform: translateX(17px); }
+
+  /* NOTIFICATION */
+  .notif-toast { position: fixed; top: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(-10px); transition: all 0.25s; pointer-events: none; }
+  .notif-toast.show { opacity: 1; transform: translateY(0); }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 14px; padding: 28px; width: 700px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .modal-desc { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+  
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#1a2b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <div class="brand">Slam Track</div>
+      <div class="sub">Dashboard</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Staff Management
+    </a>
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      Academic Management
+    </a>
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      Student Management
+    </a>
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Attendance
+    </a>
+    <a class="nav-item" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Finance
+    </a>
+    <a class="nav-item active" href="#">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Settings
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-school">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      Jyothi Public School Kottayam
+    </div>
+    <div class="topbar-right">
+      <button class="bell-btn" onclick="showToast('No new notifications')">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </button>
+      <div class="user-pill">
+        <div class="avatar" id="topbar-avatar">A</div>
+        <span id="topbar-user-name">Guest User</span>
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="page-title">Settings</div>
+    <div class="page-desc">Settings page manages reset password, admin profile, academic rules, finance rules, roles &amp; permissions, notifications, and system configuration.</div>
+
+    <div class="card" style="max-width:500px;margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:12px;">Quick Login</div>
+
+      
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('profile', this)">Profile</button>
+      <button class="tab-btn" onclick="switchTab('finance', this)">Finance</button>
+      <button class="tab-btn" onclick="switchTab('security', this)">Security</button>
+    </div>
+
+    <!-- ===== PROFILE TAB ===== -->
+    <div id="tab-profile" class="tab-panel active">
+      <!-- Avatar -->
+      <div class="card">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">
+            <img id="profile-photo" src="" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;">
+            <svg id="profile-avatar-fallback" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input
+                type="text"
+                id="login-user-id"
+                class="form-input"
+                placeholder="User ID"
+                style="flex:1;"
+            >
+
+            <input
+                type="password"
+                id="login-password"
+                class="form-input"
+                placeholder="Password"
+                style="flex:1;"
+            >
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                onclick="loginFromSettings()"
+            >
+                Login
+            </button>
+        </div>
+        <button class="btn btn-primary" onclick="openEditModal()">Edit</button>
+        </div>
+      </div>
+
+      <!-- Basic Profile -->
+      <div class="card">
+        
+        <div class="section-title">Basic Profile</div>
+        <div class="fields-grid">
+          <span class="field-label">Full Name:</span><span class="field-value" id="profile-fullname">-</span>
+          <span class="field-label">Role:</span><span class="field-value" id="profile-role">-</span>
+          <span class="field-label">Phone Number:</span><span class="field-value" id="profile-phone">-</span>
+          <span class="field-label">Email ID:</span><span class="field-value" id="profile-email">-</span>
+          <span class="field-label">Address:</span><span class="field-value" id="profile-address">-</span>
+          <span class="field-label">Gender:</span><span class="field-value" id="profile-gender">-</span>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section-title">Work Profile</div>
+        <div class="fields-grid">
+          <span class="field-label">Employee ID:</span><span class="field-value" id="profile-employee-id">-</span>
+          <span class="field-label">Assigned By:</span><span class="field-value" id="profile-assigned-by">-</span>
+          <span class="field-label">Account Created:</span><span class="field-value" id="profile-account-created">-</span>
+          <span class="field-label">Status:</span><span class="field-value green" id="profile-status">-</span>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="card">
+        <div class="section-title">Change password</div>
+        <div class="pw-row">
+          <div class="pw-field">
+            <input type="password" id="cur-pw" placeholder="Current password:">
+            <button class="pw-toggle" onclick="togglePw('cur-pw', this)">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <div class="pw-field">
+            <input type="password" id="new-pw" placeholder="New Password">
+            <button class="pw-toggle" onclick="togglePw('new-pw', this)">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <div class="pw-field">
+            <input type="password" id="conf-pw" placeholder="Conform Password">
+            <button class="pw-toggle" onclick="togglePw('conf-pw', this)">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-primary" onclick="savePassword()">Save</button>
+        </div>
+        <hr class="divider">
+        <button class="btn btn-outline" onclick="openModal('signout-modal')">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- ===== FINANCE TAB ===== -->
+    <div id="tab-finance" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Fee Configuration</div>
+          <button class="btn btn-primary btn-sm" onclick="showToast('Finance settings saved')">Save Changes</button>
+        </div>
+        <div class="finance-grid">
+          <div>
+            <div class="section-title" style="margin-bottom:12px;">Fee Rules</div>
+            <div class="fee-item"><span class="fee-label">Late Fee (per day)</span><span class="fee-value">₹ 50</span></div>
+            <div class="fee-item"><span class="fee-label">Grace Period (days)</span><span class="fee-value">5</span></div>
+            <div class="fee-item"><span class="fee-label">Discount (Siblings)</span><span class="fee-value">10%</span></div>
+            <div class="fee-item"><span class="fee-label">Tax Applicable</span>
+              <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div>
+            <div class="section-title" style="margin-bottom:12px;">Payment Methods</div>
+            <div class="fee-item"><span class="fee-label">Online Payment</span>
+              <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="fee-item"><span class="fee-label">Cash Payment</span>
+              <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="fee-item"><span class="fee-label">Cheque Payment</span>
+              <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="fee-item"><span class="fee-label">Auto Reminder</span>
+              <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECURITY TAB ===== -->
+    <div id="tab-security" class="tab-panel">
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;" id="security-dashboard-cards">
+        <div class="card" style="margin-bottom:0;padding:16px;">
+          <div class="form-label">Total Logins</div>
+          <div style="font-size:24px;font-weight:700;" id="total-logins">0</div>
+        </div>
+        <div class="card" style="margin-bottom:0;padding:16px;">
+          <div class="form-label">Failed Logins</div>
+          <div style="font-size:24px;font-weight:700;" id="failed-logins">0</div>
+        </div>
+        <div class="card" style="margin-bottom:0;padding:16px;">
+          <div class="form-label">Active Sessions</div>
+          <div style="font-size:24px;font-weight:700;" id="active-sessions-count">0</div>
+        </div>
+        <div class="card" style="margin-bottom:0;padding:16px;">
+          <div class="form-label">Password Resets</div>
+          <div style="font-size:24px;font-weight:700;" id="password-resets">0</div>
+        </div>
+      </div>
+
+      <!-- Reset Password -->
+      <div class="card">
+        <div class="staff-filter">
+          <div class="form-group">
+            <label class="form-label">Staff ID:</label>
+            <select class="form-select" id="staff-id-sel" onchange="loadStaffProfile()">
+              <option value="">— Select —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Name:</label>
+            <input type="text" class="form-input" id="staff-name-input" placeholder="" readonly>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="resetPassword()">Reset password</button>
+        </div>
+
+        <!-- Staff profile card (hidden until selected) -->
+        <div id="staff-card" style="display:none;">
+          <div class="staff-card">
+            <img src="" alt="staff" class="staff-photo" id="staff-photo" style="display:none;">
+            <div id="staff-photo-fallback" class="staff-photo" style="display:flex;align-items:center;justify-content:center;background:#e2e8f0;font-weight:700;color:#475569;">U</div>
+            <div class="staff-info">
+              <div class="staff-id-text">Staff ID: <strong id="sc-id"></strong></div>
+              <div class="staff-name-text" id="sc-name"></div>
+              <div class="temp-pw-row">
+                <span class="temp-pw-label">Temporary Password is sent to :</span>
+                <a class="temp-pw-link" id="sc-send-pw">No email selected</a>
+              </div>
+              <div id="reset-status-message" style="margin-top:8px;font-size:12px;font-weight:600;color:#16a34a;display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Management -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px;">Session Management</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Full Name</th>
+                <th>Device</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-body">
+              <tr>
+                <td colspan="6" style="text-align:center;">Loading sessions...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="session-actions">
+          <button class="btn-force" onclick="openModal('force-modal')">Force Logout</button>
+          <button class="btn-logout-all" onclick="openModal('logoutall-modal')">Log Out From All Devices</button>
+        </div>
+      </div>
+
+      <!-- Login History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Login History</div>
+          <button class="btn btn-primary btn-sm" onclick="exportHistory()">
+            ⬇ Export Excel
+          </button>
+        </div>
+        <div class="history-filters">
+          <div class="form-group">
+            <label class="form-label">Login Date</label>
+            <input type="date" class="form-input" id="history-date-filter" onchange="loadLoginHistory(1)">
+
+          </div>
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <select class="form-select" style="min-width:140px;" id="history-name-filter" onchange="loadLoginHistory(1)">
+              <option value="">All Names</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Login Date</th>
+                <th>Name</th>
+                <th>Login Time</th>
+                <th>Logout Time</th>
+                <th>Device Type</th>
+                <th>Browser / App</th>
+                <th>IP Address</th>
+                <th>Location</th>
+                <th>Login Status</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr>
+                <td colspan="9" style="text-align:center;">Loading history...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="history-count">Showing 0 records</span>
+          <div class="page-btns">
+            <div id="pagination-controls"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<!-- Edit Profile Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Profile</div>
+    <div class="modal-desc">Update your admin profile information below.</div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Profile Photo</label><input type="file" class="form-input" id="edit-photo" accept="image/*"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Full Name</label><input type="text" class="form-input" id="edit-fullname"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Phone Number</label><input type="text" class="form-input" id="edit-phone"></div>
+    <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Email</label><input type="email" class="form-input" id="edit-email"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Address</label><textarea class="form-input" id="edit-address" rows="3"></textarea></div>
+    <div class="form-group" style="margin-bottom:16px;"><label class="form-label">Gender</label><select class="form-select" id="edit-gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <label class="form-label">Current Role</label>
+        <input type="text" class="form-input" id="edit-role" readonly>
+      </div>
+      <div>
+        <label class="form-label">Employee ID</label>
+        <input type="text" class="form-input" id="edit-employee-id" readonly>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign Out Modal -->
+<div class="modal-overlay" id="signout-modal">
+  <div class="modal">
+    <div class="modal-title">Sign Out</div>
+    <div class="modal-desc">Are you sure you want to sign out of your account?</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('signout-modal')">Cancel</button>
+      <button class="btn btn-outline" onclick="logoutUser()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Force Logout Modal -->
+<div class="modal-overlay" id="force-modal">
+  <div class="modal">
+    <div class="modal-title">Force Logout</div>
+    <div class="modal-desc">This will immediately terminate all active sessions. Users will need to log in again.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('force-modal')">Cancel</button>
+      <button class="btn btn-outline" onclick="logoutAllDevices()">Force Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Out All Devices Modal -->
+<div class="modal-overlay" id="logoutall-modal">
+  <div class="modal">
+    <div class="modal-title">Log Out From All Devices</div>
+    <div class="modal-desc">This will sign out this account from all devices including this one.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('logoutall-modal')">Cancel</button>
+      <button class="btn btn-outline" onclick="logoutUser()">Log Out All</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="notif-toast" id="toast"></div>
+
+<script>
+  // TAB SWITCHING
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // TOAST
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // MODAL
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+
+  async function refreshAccessToken() {
+
+      try {
+
+          if (!REFRESH_TOKEN) {
+              return false;
+          }
+
+          const response = await fetch(
+              `${BASE_URL}/token-refresh/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                      refresh: REFRESH_TOKEN
+                  })
+              }
+          );
+
+          const result = await response.json();
+
+          if (response.ok && result.status) {
+
+              ACCESS_TOKEN = result.tokens.access;
+              REFRESH_TOKEN = result.tokens.refresh;
+
+              localStorage.setItem(
+                  'access_token',
+                  ACCESS_TOKEN
+              );
+
+              localStorage.setItem(
+                  'refresh_token',
+                  REFRESH_TOKEN
+              );
+
+              return true;
+          }
+
+          return false;
+
+      } catch (error) {
+
+          console.error(
+              'TOKEN REFRESH ERROR =',
+              error
+          );
+
+          return false;
+      }
+  }
+
+  async function handleUnauthorized(response) {
+
+      if (response.status !== 401) {
+          return false;
+      }
+
+      const refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+          return 'retry';
+      }
+
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+
+      ACCESS_TOKEN = '';
+      REFRESH_TOKEN = '';
+
+      showToast(
+          'Session expired. Please login again.'
+      );
+
+      document.getElementById(
+          'login-user-id'
+      )?.focus();
+
+      return true;
+  }
+
+  // PW TOGGLE
+  function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // SAVE PASSWORD
+  async function savePassword() {
+
+      const currentPassword =
+          document.getElementById('cur-pw').value;
+
+      const newPassword =
+          document.getElementById('new-pw').value;
+
+      const confirmPassword =
+          document.getElementById('conf-pw').value;
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/settings/change-password/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  },
+                  body: JSON.stringify({
+                      current_password: currentPassword,
+                      new_password: newPassword,
+                      confirm_password: confirmPassword
+                  })
+              }
+          );
+
+          const result = await response.json();
+
+          console.log(
+              'CHANGE PASSWORD RESULT =',
+              result
+          );
+
+          if (
+              response.ok &&
+              result.status
+          ) {
+
+              showToast(
+                  'Password changed successfully'
+              );
+
+              document.getElementById(
+                  'cur-pw'
+              ).value = '';
+
+              document.getElementById(
+                  'new-pw'
+              ).value = '';
+
+              document.getElementById(
+                  'conf-pw'
+              ).value = '';
+
+          } else {
+
+              let errorMessage =
+                  result.message ||
+                  'Password change failed';
+
+              if (result.errors) {
+
+                  const firstErrorKey =
+                      Object.keys(result.errors)[0];
+
+                  if (
+                      firstErrorKey &&
+                      result.errors[firstErrorKey] &&
+                      result.errors[firstErrorKey].length
+                  ) {
+                      errorMessage =
+                          result.errors[firstErrorKey][0];
+                  }
+              }
+
+              showToast(errorMessage);
+          }
+
+      } catch (error) {
+
+          console.error(
+              'CHANGE PASSWORD ERROR =',
+              error
+          );
+
+          showToast(
+              'Password change failed'
+          );
+      }
+  }
+
+  async function loginFromSettings() {
+
+      try {
+
+          const userId =
+              document.getElementById(
+                  'login-user-id'
+              ).value.trim();
+
+          const password =
+              document.getElementById(
+                  'login-password'
+              ).value;
+
+          const response = await fetch(
+              `${BASE_URL}/login/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type':
+                      'application/json'
+                  },
+                  body: JSON.stringify({
+                      user_id: userId,
+                      password: password
+                  })
+              }
+          );
+
+          const result =
+              await response.json();
+
+          console.log(
+              'LOGIN RESULT =',
+              result
+          );
+
+          if (
+              response.ok &&
+              result.status
+          ) {
+
+              localStorage.setItem(
+                  'access_token',
+                  result.tokens.access
+              );
+
+              localStorage.setItem(
+                  'refresh_token',
+                  result.tokens.refresh
+              );
+
+              ACCESS_TOKEN =
+                  result.tokens.access;
+
+              REFRESH_TOKEN =
+                  result.tokens.refresh;
+
+              showToast(
+                  'Login successful'
+              );
+
+              location.reload();
+
+          } else {
+
+              showToast(
+                  result.message ||
+                  'Login failed'
+              );
+          }
+
+      } catch (error) {
+
+          console.error(
+              'LOGIN ERROR =',
+              error
+          );
+
+          showToast(
+              'Login failed'
+          );
+      }
+  }
+
+  // EDIT MODAL
+  function openEditModal() { openModal('edit-modal'); }
+  async function saveEdit() {
+    const formData = new FormData();
+
+    formData.append('fullname', document.getElementById('edit-fullname').value);
+    formData.append('phone_number', document.getElementById('edit-phone').value);
+    formData.append('email', document.getElementById('edit-email').value);
+    formData.append('address', document.getElementById('edit-address').value);
+    formData.append('gender', document.getElementById('edit-gender').value);
+
+    const photo = document.getElementById('edit-photo').files[0];
+
+    if (photo) {
+        formData.append('profile_photo', photo);
+    }
+
+    try {
+
+        const response = await fetch(`${BASE_URL}/settings/profile/update/`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${ACCESS_TOKEN}`
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        console.log('PROFILE UPDATE RESULT =', result);
+
+        if (response.ok && result.status) {
+            closeModal('edit-modal');
+            showToast('Profile updated successfully');
+            await loadProfile();
+        } else {
+            showToast(result.message || 'Profile update failed');
+        }
+
+    } catch (error) {
+        console.error('PROFILE UPDATE ERROR', error);
+        showToast('Profile update failed');
+    }
+  }
+
+  async function logoutUser() {
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/settings/logout/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  }
+              }
+          );
+
+          const result =
+              await response.json();
+
+          console.log(
+              'LOGOUT RESULT =',
+              result
+          );
+
+          localStorage.removeItem(
+              'access_token'
+          );
+
+          localStorage.removeItem(
+              'refresh_token'
+          );
+
+          closeModal(
+              'signout-modal'
+          );
+
+          showToast(
+              'Logged out successfully'
+          );
+
+          setTimeout(() => {
+              window.location.reload();
+          }, 1000);
+
+      } catch (error) {
+
+          console.error(
+              'LOGOUT ERROR =',
+              error
+          );
+
+          showToast(
+              'Logout failed'
+          );
+      }
+  }
+
+  // STAFF PROFILE
+
+  function loadStaffProfile() {
+    const id = document.getElementById('staff-id-sel').value;
+
+    const selected = window.staffUsers?.find(
+        user => user.user_id === id
+    );
+
+    const card = document.getElementById('staff-card');
+
+    if (!selected) {
+        card.style.display = 'none';
+        document.getElementById('staff-name-input').value = '';
+        return;
+    }
+
+    document.getElementById('staff-name-input').value = selected.fullname || '';
+    document.getElementById('sc-id').textContent = selected.user_id;
+    document.getElementById('sc-name').textContent = selected.fullname || '-';
+    document.getElementById('sc-send-pw').textContent = `📨 ${selected.email || selected.user_id || '-'}`;
+
+    const photo =
+    document.getElementById('staff-photo');
+
+    const fallback =
+        document.getElementById(
+            'staff-photo-fallback'
+        );
+
+    if (selected.photo) {
+
+        let photoUrl = selected.photo;
+
+        if (!photoUrl.startsWith('http')) {
+
+            photoUrl =
+                'http://127.0.0.1:8000' +
+                photoUrl;
+        }
+
+        photo.src = photoUrl;
+        photo.style.display = 'block';
+
+        fallback.style.display = 'none';
+
+    } else {
+
+        photo.style.display = 'none';
+
+        fallback.style.display = 'flex';
+
+        fallback.textContent =
+            (selected.fullname || 'U')
+            .charAt(0)
+            .toUpperCase();
+    }
+
+
+    card.style.display = 'block';
+  }
+
+
+  async function resetPassword() {
+
+    const userId = document.getElementById('staff-id-sel').value;
+
+    if (!userId) {
+        showToast('Please select a user');
+        return;
+    }
+
+    const button = document.querySelector('[onclick="resetPassword()"]');
+    const statusBox = document.getElementById('reset-status-message');
+
+    const originalText = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '⏳ Sending...';
+    button.style.opacity = '0.7';
+
+    statusBox.style.display = 'none';
+
+    try {
+
+        const response = await fetch(
+            `${BASE_URL}/security/reset-password/`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${ACCESS_TOKEN}`
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    remarks: 'Reset from Security Panel'
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.status) {
+
+
+            statusBox.style.display = 'block';
+            statusBox.innerHTML = '✅ Password reset email sent successfully';
+
+            showToast('Password reset email sent successfully');
+
+            let seconds = 30;
+
+            const timer = setInterval(() => {
+
+                button.innerHTML = `Reset Password (${seconds}s)`;
+
+                seconds--;
+
+                if (seconds < 0) {
+                    clearInterval(timer);
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                    button.style.opacity = '1';
+                }
+
+            }, 1000);
+
+        } else {
+
+            button.disabled = false;
+            button.innerHTML = originalText;
+            button.style.opacity = '1';
+
+            showToast(result.message || 'Reset failed');
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        button.disabled = false;
+        button.innerHTML = originalText;
+        button.style.opacity = '1';
+
+        showToast('Reset failed');
+    }
+  }
+
+  // SESSION SIGN OUT
+  async function signOutSession(sessionId) {
+
+      if (!confirm('Sign out this session?')) {
+          return;
+      }
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/security/session-signout/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  },
+                  body: JSON.stringify({
+                      session_id: sessionId
+                  })
+              }
+          );
+
+          const result = await response.json();
+
+          if (response.ok && result.status) {
+              showToast('Session signed out successfully');
+
+              const activeCount = document.getElementById('active-sessions-count');
+              if (activeCount && Number(activeCount.textContent) === 1) {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              setTimeout(() => {
+              window.location.reload();
+              }, 1000);
+              return;
+              }
+
+              await loadActiveSessions();
+              await loadSecurityDashboard();
+          } else {
+              showToast(result.message || 'Session sign out failed');
+          }
+
+      } catch (error) {
+          console.error(error);
+          showToast('Session sign out failed');
+      }
+  }
+
+  // FORCE LOGOUT
+  // async function forceLogout() {
+
+  //     try {
+
+  //         const response = await fetch(
+  //             `${BASE_URL}/security/force-logout/`,
+  //             {
+  //                 method: 'POST',
+  //                 headers: {
+  //                     'Content-Type': 'application/json',
+  //                     Authorization: `Bearer ${ACCESS_TOKEN}`
+  //                 }
+  //             }
+  //         );
+
+  //         closeModal('force-modal');
+
+  //         if (response.status === 401) {
+  //             localStorage.removeItem('access_token');
+  //             localStorage.removeItem('refresh_token');
+  //             showToast('All sessions terminated');
+  //             setTimeout(() => window.location.reload(), 1000);
+  //             return;
+  //         }
+
+  //         const result = await response.json();
+
+  //         if (response.ok && result.status) {
+  //             localStorage.removeItem('access_token');
+  //             localStorage.removeItem('refresh_token');
+  //             showToast('Force logout completed');
+  //             setTimeout(() => window.location.reload(), 1000);
+  //         } else {
+  //             showToast(result.message || 'Force logout failed');
+  //         }
+
+  //     } catch (error) {
+  //         console.error('FORCE LOGOUT ERROR =', error);
+  //         showToast('Force logout failed');
+  //     }
+  // }
+
+  // LOGOUT ALL
+  async function logoutAllDevices() {
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/security/logout-all-devices/`,
+              {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  }
+              }
+          );
+
+          closeModal('logoutall-modal');
+
+          if (response.status === 401) {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              showToast('Logged out from all devices');
+              setTimeout(() => window.location.reload(), 1000);
+              return;
+          }
+
+          const result = await response.json();
+
+          if (response.ok && result.status) {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              showToast('Logged out from all devices');
+              setTimeout(() => window.location.reload(), 1000);
+          } else {
+              showToast(result.message || 'Logout failed');
+          }
+
+      } catch (error) {
+          console.error('LOGOUT ALL ERROR =', error);
+          showToast('Logout failed');
+      }
+  }
+
+  // HISTORY FILTER
+  function filterHistory(name) {
+    const rows = document.querySelectorAll('#history-body tr');
+    let count = 0;
+    rows.forEach(r => {
+      const show = !name || r.dataset.name === name;
+      r.style.display = show ? '' : 'none';
+      if (show) count++;
+    });
+    document.getElementById('history-count').textContent = `Showing ${count} of 7 Students`;
+  }
+
+  // EXPORT
+  async function exportHistory() {
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/security/export-login-history-excel/`,
+              {
+                  method: 'GET',
+                  headers: {
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  }
+              }
+          );
+
+          if (!response.ok) {
+              showToast('Export failed');
+              return;
+          }
+
+          const blob = await response.blob();
+
+          const url = window.URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'login_history.xlsx';
+
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          window.URL.revokeObjectURL(url);
+
+          showToast('Excel exported successfully');
+
+      } catch (error) {
+
+          console.error('EXPORT ERROR =', error);
+          showToast('Export failed');
+      }
+  }
+
+  // PROFILE LOADING
+  const BASE_URL = 'http://127.0.0.1:8000/api';
+  let ACCESS_TOKEN =
+      localStorage.getItem('access_token') || '';
+
+  let REFRESH_TOKEN =
+      localStorage.getItem('refresh_token') || '';
+
+  // if (!ACCESS_TOKEN) {
+  // window.location.href = '/login/';
+  // }
+
+  async function loadProfile() {
+      try {
+          const response = await fetch(`${BASE_URL}/settings/profile/`,  {
+              headers: {
+                  Authorization: `Bearer ${ACCESS_TOKEN}`
+              }
+          });
+          const authResult = await handleUnauthorized(response);
+          if (authResult === true) {
+              return;
+          }
+          if (authResult === 'retry') {
+              window.location.reload();
+              return;
+          }
+
+          const result = await response.json();
+
+          console.log('PROFILE API RESULT =', result);
+
+          if (!result.status || !result.data) {
+              showToast('Unable to load profile');
+              return;
+          }
+
+          const d = result.data;
+
+          console.log('PROFILE DATA =', d);
+          console.log('FULLNAME =', d.fullname);
+          console.log('PHONE =', d.phone_number);
+          console.log('ADDRESS =', d.address);
+          console.log('GENDER =', d.gender);
+
+          const fullName = d.fullname || '-';
+          const role = d.role || '-';
+          const phone = d.phone_number || '-';
+          const email = d.email || '-';
+          const address = d.address || '-';
+          const gender = d.gender || '-';
+          const employeeId = d.employee_id || '-';
+          const assignedBy = d.assigned_by || '-';
+          const accountCreated = d.account_created || '-';
+          const status = d.status || '-';
+
+          if(document.getElementById('profile-fullname')) document.getElementById('profile-fullname').textContent = fullName;
+          if(document.getElementById('profile-role')) document.getElementById('profile-role').textContent = role;
+          if(document.getElementById('profile-phone')) document.getElementById('profile-phone').textContent = phone;
+          if(document.getElementById('profile-email')) document.getElementById('profile-email').textContent = email;
+          if(document.getElementById('profile-address')) document.getElementById('profile-address').textContent = address;
+          if(document.getElementById('profile-gender')) document.getElementById('profile-gender').textContent = gender;
+          if(document.getElementById('profile-employee-id')) document.getElementById('profile-employee-id').textContent = employeeId;
+          if(document.getElementById('profile-assigned-by')) document.getElementById('profile-assigned-by').textContent = assignedBy;
+          if (document.getElementById('profile-account-created')) {
+              let formattedDate = '-';
+              if (accountCreated && accountCreated !== '-') {
+                  formattedDate = new Date(
+                      accountCreated
+                  ).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });}
+                  document.getElementById('profile-account-created').textContent = formattedDate;}
+          if(document.getElementById('profile-status')) document.getElementById('profile-status').textContent = status;
+          
+          if (document.getElementById('topbar-user-name')) {
+              document.getElementById('topbar-user-name').textContent = fullName;
+          }
+
+          if (document.getElementById('topbar-avatar')) {
+              document.getElementById('topbar-avatar').textContent =
+                  (fullName || 'U').trim().charAt(0).toUpperCase();
+          }
+
+          if(document.getElementById('edit-fullname')) document.getElementById('edit-fullname').value = fullName === '-' ? '' : fullName;
+          if(document.getElementById('edit-phone')) document.getElementById('edit-phone').value = phone === '-' ? '' : phone;
+          if(document.getElementById('edit-email')) document.getElementById('edit-email').value = email === '-' ? '' : email;
+          if(document.getElementById('edit-address')) document.getElementById('edit-address').value = address === '-' ? '' : address;
+          if(document.getElementById('edit-gender')) document.getElementById('edit-gender').value = gender === '-' ? '' : gender;
+
+          if(document.getElementById('edit-role')) {
+              document.getElementById('edit-role').value = role;
+          }
+
+          if(document.getElementById('edit-employee-id')) {
+              document.getElementById('edit-employee-id').value = employeeId;
+          }
+
+          if (d.profile_photo) {
+              let photoUrl = d.profile_photo;
+              if (!photoUrl.startsWith('http')) {
+                  photoUrl = 'http://127.0.0.1:8000' + photoUrl;
+              }
+              document.getElementById('profile-photo').src = photoUrl;
+              document.getElementById('profile-photo').style.display = 'block';
+              document.getElementById('profile-avatar-fallback').style.display = 'none';
+          }
+
+      } catch (error) {
+          console.error('PROFILE LOAD ERROR', error);
+      }
+  }
+
+  async function loadSecurityUsers() {
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/users/`,
+              {
+                  headers: {
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  }
+              }
+          );
+
+          const authResult = await handleUnauthorized(response);
+          if (authResult === true) {
+              return;
+          }
+          if (authResult === 'retry') {
+              window.location.reload();
+              return;
+          }
+
+          const result = await response.json();
+
+          console.log('USERS API RESULT =', result);
+
+          if (!result.status) {
+              showToast(result.message || 'Unable to load users');
+              return;
+          }
+
+          window.staffUsers = result.data || [];
+
+          const dropdown = document.getElementById('staff-id-sel');
+
+          if (!dropdown) return;
+
+          dropdown.innerHTML =
+              '<option value="">— Select —</option>';
+
+          window.staffUsers.forEach(user => {
+
+              dropdown.innerHTML += `
+                  <option value="${user.user_id}">
+                      ${user.user_id} - ${user.fullname}
+                  </option>
+              `;
+          });
+
+      } catch (error) {
+
+          console.error(
+              'LOAD USERS ERROR =',
+              error
+          );
+
+          showToast('Unable to load users');
+      }
+  }
+
+  // Load Login History Names for Dropdown
+  async function loadHistoryNames() {
+
+      try {
+
+          const response = await fetch(
+              `${BASE_URL}/users/`,
+              {
+                  headers: {
+                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                  }
+              }
+          );
+
+          const authResult = await handleUnauthorized(response);
+          if (authResult === true) {
+              return;
+          }
+          if (authResult === 'retry') {
+              window.location.reload();
+              return;
+          }
+
+          const result = await response.json();
+
+          const dropdown =
+              document.getElementById(
+                  'history-name-filter'
+              );
+
+          if (!dropdown) return;
+
+          dropdown.innerHTML =
+              '<option value="">All Names</option>';
+
+          const users = result.data || [];
+
+          const uniqueNames = [
+              ...new Set(
+                  users
+                      .map(user => user.fullname)
+                      .filter(Boolean)
+              )
+          ].sort();
+
+          uniqueNames.forEach(name => {
+
+              dropdown.innerHTML += `
+                  <option value="${name}">
+                      ${name}
+                  </option>
+              `;
+          });
+
+      } catch (error) {
+
+          console.error(
+              'LOAD HISTORY NAMES ERROR =',
+              error
+          );
+
+          showToast(
+              'Unable to load names'
+          );
+      }
+  }
+
+  async function loadSecurityDashboard() {
+
+    try {
+
+        const response = await fetch(
+            `${BASE_URL}/security/dashboard/`,
+            {
+                headers: {
+                    Authorization: `Bearer ${ACCESS_TOKEN}`
+                }
+            }
+        );
+
+        const authResult = await handleUnauthorized(response);
+        if (authResult === true) {
+            return;
+        }
+        if (authResult === 'retry') {
+            window.location.reload();
+            return;
+        }
+
+        const result = await response.json();
+
+        console.log('SECURITY DASHBOARD =', result);
+
+        if (result.status && result.data) {
+          document.getElementById('total-logins').textContent = result.data.total_logins || 0;
+
+          document.getElementById('failed-logins').textContent = result.data.total_failed_logins || 0;
+
+          document.getElementById('active-sessions-count').textContent = result.data.active_sessions || 0;
+
+          document.getElementById('password-resets').textContent = result.data.password_resets || 0;
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
+  }
+  
+
+  async function loadActiveSessions() {
+
+    try {
+
+        const response = await fetch(
+            `${BASE_URL}/security/active-sessions/`,
+            {
+                headers: {
+                    Authorization: `Bearer ${ACCESS_TOKEN}`
+                }
+            }
+        );
+
+        const authResult = await handleUnauthorized(response);
+        if (authResult === true) {
+            return;
+        }
+        if (authResult === 'retry') {
+            window.location.reload();
+            return;
+        }
+
+        const result = await response.json();
+        console.log('ACTIVE SESSIONS API =', result);
+        console.log('ACTIVE SESSION DATA =', result.data);
+        console.log('ACTIVE SESSION TYPE =', typeof result.data);
+        console.log('ACTIVE SESSION IS ARRAY =', Array.isArray(result.data));
+
+        const tbody = document.getElementById('sessions-body');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        // --- New block replacing old block ---
+        const sessions = result.data || result.sessions || [];
+
+        if (!Array.isArray(sessions) || sessions.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center;">
+                        No active sessions found
+                    </td>
+                </tr>
+            `;
+
+            console.log('NO ACTIVE SESSIONS RETURNED');
+            return;
+        }
+
+        sessions.forEach(session => {
+            console.log('RENDERING SESSION =', session);
+            tbody.innerHTML += `
+    <tr>
+    <td>${session.user_id || '-'}</td>
+    <td>${session.fullname || '-'}</td>
+    <td>${session.device_name || 'Unknown Device'}</td>
+    <td>${session.location || session.ip_address || 'Unknown Location'}</td>
+    <td><span class="status-active">${session.is_active ? 'Active' : 'Inactive'}</span></td>
+    <td>
+    <button
+    class="action-link"
+    onclick="signOutSession(${session.id})">
+    Sign Out
+    </button>
+    </td>
+    </tr>
+    `;
+        });
+        console.log('TABLE HTML =', tbody.innerHTML);
+        console.log('ACTIVE SESSIONS RENDERED =', sessions.length);
+
+    } catch (error) {
+        console.error(error);
+    }
+  }
+
+  let currentHistoryPage = 1;
+
+  async function loadLoginHistory(page = 1) {
+    currentHistoryPage = page;
+
+    try {
+
+      const selectedName = document.getElementById('history-name-filter')?.value || '';
+      const selectedDate = document.getElementById('history-date-filter')?.value || '';
+
+      let historyUrl = `${BASE_URL}/security/login-history/`;
+
+      const params = new URLSearchParams();
+
+      if (selectedName) params.append('name', selectedName);
+      if (selectedDate) params.append('login_date', selectedDate);
+      params.append('page', page);
+
+      if (params.toString()) {
+        historyUrl += `?${params.toString()}`;
+      }
+
+      const response = await fetch(
+        historyUrl,
+        {
+          headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`
+          }
+        }
+      );
+
+      const authResult = await handleUnauthorized(response);
+      if (authResult === true) {
+          return;
+      }
+      if (authResult === 'retry') {
+          window.location.reload();
+          return;
+      }
+
+      const result = await response.json();
+
+      const tbody = document.getElementById('history-body');
+
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      const historyData = result.results || result.data || [];
+
+      if (!historyData || historyData.length === 0) {
+        tbody.innerHTML = `
+                <tr>
+                    <td colspan="9">No login history found</td>
+                </tr>
+            `;
+        // Update count and pagination
+        const totalCount = result.count || 0;
+        document.getElementById('history-count').textContent =
+        `Showing 0-0 of ${totalCount} records`;
+        const totalPages = Math.ceil(totalCount / 10) || 1;
+        const paginationContainer = document.getElementById('pagination-controls');
+        if (paginationContainer) {
+          let html = '';
+              html += `
+        <button
+        class="page-nav"
+        ${currentHistoryPage <= 1 ? 'disabled' : ''}
+        onclick="loadLoginHistory(${currentHistoryPage - 1})">
+        Previous
+        </button>`;
+                  for (let i = 1; i <= totalPages; i++) {
+                    html += `
+        <button
+        class="page-btn ${i === currentHistoryPage ? 'active' : ''}"
+        onclick="loadLoginHistory(${i})">
+        ${i}
+        </button>`;
+                  }
+                  html += `
+        <button
+        class="page-nav"
+        ${currentHistoryPage >= totalPages ? 'disabled' : ''}
+        onclick="loadLoginHistory(${currentHistoryPage + 1})">
+        Next
+        </button>`;
+          paginationContainer.innerHTML = html;
+        }
+        return;
+      }
+
+      historyData.forEach(item => {
+        tbody.innerHTML += `
+                <tr>
+                    <td>${
+                        item.login_time
+                            ? new Date(item.login_time).toLocaleDateString()
+                            : item.logout_time
+                                ? new Date(item.logout_time).toLocaleDateString()
+                                : '-'
+                    }</td>
+                    <td>${item.fullname || '-'}</td>
+                    <td>${item.login_time ? new Date(item.login_time).toLocaleString() : '-'}</td>
+                    <td>${item.logout_time ? new Date(item.logout_time).toLocaleString() : '-'}</td>
+                    <td>${item.device_name?.substring(0,50) || 'Unknown Device'}</td>
+                    <td>${item.browser || item.device_name || 'Unknown Browser'}</td>
+                    <td>${item.ip_address || '-'}</td>
+                    <td>${item.location || item.ip_address || '-'}</td>
+                    <td>
+                    ${item.login_status === 'SUCCESS'
+                        ? '<span class="badge badge-success">SUCCESS</span>'
+                        : item.login_status === 'LOGOUT'
+                            ? '<span class="badge">LOGOUT</span>'
+                            : item.login_status === 'FAILED'
+                                ? '<span class="badge badge-fail">FAILED</span>'
+                                : '-'}
+                    </td>
+                </tr>
+            `;
+      });
+
+      // Pagination and count
+      const totalCount = result.count || historyData.length;
+      const startRecord = totalCount === 0 ? 0 : ((currentHistoryPage - 1) * 10) + 1;
+      const endRecord = Math.min(currentHistoryPage * 10, totalCount);
+
+      document.getElementById('history-count').textContent =
+      `Showing ${startRecord}-${endRecord} of ${totalCount} records`;
+
+      const totalPages = Math.ceil(totalCount / 10) || 1;
+      const paginationContainer = document.getElementById('pagination-controls');
+
+      if (paginationContainer) {
+
+        let html = '';
+
+        html += `
+<button
+class="page-nav"
+${currentHistoryPage <= 1 ? 'disabled' : ''}
+onclick="loadLoginHistory(${currentHistoryPage - 1})">
+Previous
+</button>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+          html += `
+<button
+class="page-btn ${i === currentHistoryPage ? 'active' : ''}"
+onclick="loadLoginHistory(${i})">
+${i}
+</button>`;
+        }
+
+        html += `
+<button
+class="page-nav"
+${currentHistoryPage >= totalPages ? 'disabled' : ''}
+onclick="loadLoginHistory(${currentHistoryPage + 1})">
+Next
+</button>`;
+
+        paginationContainer.innerHTML = html;
+      }
+
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+
+      if (!ACCESS_TOKEN) {
+          return;
+      }
+
+      loadProfile();
+      loadSecurityUsers();
+      loadHistoryNames();
+      loadSecurityDashboard();
+      loadActiveSessions();
+      loadLoginHistory();
+  });
+</script>
+</body>
+</html>

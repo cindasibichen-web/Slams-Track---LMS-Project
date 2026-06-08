@@ -63,13 +63,26 @@ class Profiles(AbstractBaseUser, PermissionsMixin):
 
     role = models.CharField(max_length=100, choices=ROLE_CHOICES, null=True, blank=True)
 
+    photo = models.ImageField(upload_to='profile_photos/',null=True,blank=True)
+
+    address = models.TextField(null=True,blank=True)
+
+    gender = models.CharField(max_length=20,null=True,blank=True)
+
 
     date_joined = models.DateTimeField(default=timezone.now)
+
     is_staff = models.BooleanField(default=False)
+
     is_active = models.BooleanField(default=True)
+    
     permissions = models.ManyToManyField(
         Permission,
         blank=True
+    )
+
+    token_version = models.PositiveIntegerField(
+        default=1
     )
     objects = UserManager()
 
@@ -120,64 +133,22 @@ class Profiles(AbstractBaseUser, PermissionsMixin):
         return f"{self.user_id if self.user_id else self.fullname} - {self.email if self.email else 'No Email'}"
     
 
-# otp verification model 
-class OTPVerification(models.Model):
-
-    PURPOSE_CHOICES = (
-        ('forgot_password', 'Forgot Password'),
-    )
-
-    user = models.ForeignKey(
-        'Profiles',
-        on_delete=models.CASCADE,
-        related_name='otp_records'
-    )
-
-    otp = models.CharField(max_length=6)
-
-    purpose = models.CharField(
-        max_length=50,
-        choices=PURPOSE_CHOICES,
-        default='forgot_password'
-    )
-
-    is_used = models.BooleanField(default=False)
-
-    attempts = models.PositiveIntegerField(default=0)
-
-    max_attempts = models.PositiveIntegerField(default=5)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    expires_at = models.DateTimeField()
-
-    used_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
-    secret = models.CharField(max_length=255, null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.user.email} - {self.otp}"
-    
-# student details model 
-
-# student management
 
 class StudentPersonalDetails(models.Model):
     user = models.OneToOneField(Profiles, on_delete=models.CASCADE)
+
     dob = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=20, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
-    blood_group = models.CharField(max_length=255, null=True, blank=True)
-    father_name = models.CharField(max_length=255, null=True, blank=True)
-    father_phone_number = models.CharField(max_length=255, null=True, blank=True)
-    father_occupation = models.CharField(max_length=255, null=True, blank=True)
-    mother_name = models.CharField(max_length=255, null=True, blank=True)
-    mother_phone_number = models.CharField(max_length=255, null=True, blank=True)
-    mother_occupation = models.CharField(max_length=255, null=True, blank=True)
-    
-    
+
+    parent_guardian_name = models.CharField(max_length=255, null=True, blank=True)
+    parent_guardian_phone_number = models.CharField(max_length=20, null=True, blank=True)
+
+    mother_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
 
 
     def __str__(self):
@@ -186,15 +157,13 @@ class StudentPersonalDetails(models.Model):
 
 class StudentAcademicDetails(models.Model):
     user = models.OneToOneField(Profiles, on_delete=models.CASCADE)
-    student_class = models.ForeignKey('ClassModel', on_delete=models.SET_NULL ,null=True, blank=True)  
+    courses = models.ForeignKey(Course, on_delete=models.SET_NULL ,null=True, blank=True)  
     batch = models.CharField(max_length=100, null=True, blank=True)
-    roll_number = models.CharField(max_length=100, null=True, blank=True)
     section = models.CharField(max_length=100, null=True, blank=True) 
     student_type = models.CharField(max_length=100, null=True, blank=True)
     admission_id = models.CharField(max_length=100, null=True, blank=True)
     # eg class 1 A or class 2 B etc.
     admission_date = models.DateField(null=True, blank=True)
-    previous_institute = models.TextField(null=True, blank=True)
     previous_qualifications = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, null=True, blank=True)  # e.g., active, graduated, etc.
 
@@ -332,7 +301,7 @@ class StaffManagementModel(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     is_teacher = models.BooleanField(default=True)
-    
+    student_class = models.ForeignKey('ClassModel', on_delete=models.SET_NULL, null=True, blank=True)
     # staff_role = models.CharField(max_length=100, choices=STAFF_ROLE_CHOICES)
 
 
@@ -371,24 +340,207 @@ class ClassModel(models.Model):
         return f"{self.class_id}  - {self.class_name}"
     
 
-class TeachersTimeTable(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-    teacher = models.ForeignKey(StaffManagementModel, on_delete=models.CASCADE)
-    day_of_week = models.CharField(max_length=20)  # e.g., Monday, Tuesday
-    period = models.CharField(max_length=20)  # e.g., Period 1, Period 2
-    subject = models.CharField(max_length=255)
-    class_assigned = models.ForeignKey(ClassModel, on_delete=models.CASCADE)
+# =========================
+# LOGIN HISTORY MODEL
+# =========================
+
+class LoginHistory(models.Model):
+
+    STATUS_SUCCESS = 'SUCCESS'
+    STATUS_FAILED = 'FAILED'
+    STATUS_LOGOUT = 'LOGOUT'
+
+    STATUS_CHOICES = [
+        (STATUS_SUCCESS, 'SUCCESS'),
+        (STATUS_FAILED, 'FAILED'),
+        (STATUS_LOGOUT, 'LOGOUT'),
+    ]
+
+    user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='login_histories'
+    )
+
+    login_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    logout_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    browser = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    raw_user_agent = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    login_status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SUCCESS,
+        db_index=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['login_status']),
+        ]
 
     def __str__(self):
-        return f"{self.teacher.staff_name} - {self.day_of_week} {self.period}"
+        return (
+            f"{self.user.user_id} | "
+            f"{self.login_status} | "
+            f"{self.created_at.strftime('%Y-%m-%d %H:%M')}"
+        )
+
+# =========================
+# ACTIVE SESSION MODEL
+# =========================
+
+class UserSession(models.Model):
+
+    user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        related_name='user_sessions'
+    )
+
+    session_id = models.CharField(
+        max_length=128,
+        unique=True,
+        db_index=True,
+        help_text='Stores JWT JTI (token identifier), not the full JWT token.'
+    )
+
+    token_version = models.PositiveIntegerField(
+        default=1
+    )
+
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    browser = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    last_activity = models.DateTimeField(
+        auto_now=True
+    )
+
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ] 
+
+    def __str__(self):
+        return (
+            f"{self.user.user_id} | "
+            f"{ 'Active' if self.is_active else 'Inactive' }"
+        )
+        
+
+# =========================
+# PASSWORD RESET AUDIT
+# =========================
+
+class PasswordResetAudit(models.Model):
+
+    target_user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        related_name='password_resets'
+    )
+
+    reset_by = models.ForeignKey(
+        Profiles,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='performed_password_resets'
+    )
+
+    temporary_password_sent = models.BooleanField(
+        default=False
+    )
+
+    remarks = models.TextField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return (
+            f"{self.target_user.user_id} "
+            f"reset by "
+            f"{self.reset_by.user_id if self.reset_by else 'System'}"
+        )
     
-# attendance marking model 
-class StudentAttendance(models.Model):
-    student = models.ForeignKey(Profiles, on_delete=models.CASCADE)
-    date = models.DateField()
-    status = models.CharField(max_length=20)  # e.g., Present, Absent, Late
-    remarks = models.TextField(null=True, blank=True)
-    taken_by = models.ForeignKey(StaffManagementModel, on_delete=models.SET_NULL, null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.student.fullname if self.student.fullname else self.student.user_id} - {self.date} - {self.status}"

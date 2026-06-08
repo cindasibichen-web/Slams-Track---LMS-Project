@@ -49,17 +49,26 @@ INSTALLED_APPS = [
     'superadmin_app',
     'teachers_app',
     'administration_app',
+    'corsheaders',
+    'rest_framework',
+    'django_extensions',
+    'openpyxl',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'lms_attendance_project.urls'
 
@@ -76,6 +85,18 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 WSGI_APPLICATION = 'lms_attendance_project.wsgi.application'
@@ -122,17 +143,23 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
+TIME_ZONE = "Asia/Kolkata"
 USE_TZ = True
+USE_I18N = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -143,7 +170,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'superadmin_app.authentication.SessionJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -173,3 +200,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'cb01262002@gmail.com'
 EMAIL_HOST_PASSWORD = 'vikw fvdl ofow vprh'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+GEOIP_PATH = BASE_DIR / "geoip"
