@@ -1319,7 +1319,7 @@ from rest_framework.permissions import IsAuthenticated
 
 class SettingsPageAPIView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
 
