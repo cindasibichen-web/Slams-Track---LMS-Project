@@ -30,7 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
+FERNET_KEY = config('FERNET_KEY')  # Load from .env or use a default for development
 
 
 
@@ -87,7 +87,7 @@ WSGI_APPLICATION = 'lms_attendance_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB', 'lms_db'),
+        'NAME': config('POSTGRES_DB', 'lms_db_neww'),
         'USER': config('POSTGRES_USER', 'postgres'),
         'PASSWORD': config('POSTGRES_PASSWORD', 'admin'),
         'HOST': config('POSTGRES_HOST', 'localhost'),
@@ -132,7 +132,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -141,11 +146,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # REST Framework settings
+# settings.py
+
 REST_FRAMEWORK = {
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
+
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+
+        # OR Session Authentication
+        # 'rest_framework.authentication.SessionAuthentication',
     ),
+
     'DEFAULT_PERMISSION_CLASSES': (
+
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
@@ -165,7 +179,6 @@ SIMPLE_JWT = {
 }
 
 
-# smtp settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587

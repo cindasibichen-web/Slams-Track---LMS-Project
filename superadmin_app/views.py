@@ -12,6 +12,64 @@ from datetime import timedelta
 from django.utils import timezone
 from django.core.mail import send_mail
 import pyotp
+# from .utils import decrypt_request_payload
+from rest_framework_simplejwt.exceptions import TokenError
+
+
+class TokenRefreshAPIView(APIView):
+
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response({
+                "status": False,
+                "message": "Refresh token is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+
+            # Get user from token
+            user_id = refresh.payload.get("user_id")
+
+            user = Profiles.objects.filter(id=user_id).first()
+
+            if not user:
+                return Response({
+                    "status": False,
+                    "message": "User not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            access_token = refresh.access_token
+
+            # Add custom claims to access token
+            access_token["profile_id"] = user.id
+            access_token["role"] = user.role
+            access_token["email"] = user.email
+            access_token["usersid"] = user.user_id
+            access_token["category"] = (
+                user.category.name if user.category else None
+            )
+
+            return Response({
+                "status": True,
+                "message": "Token refreshed successfully",
+                "tokens": {
+                    "access": str(access_token),
+                    "refresh": str(refresh)
+                }
+            }, status=status.HTTP_200_OK)
+
+        except TokenError:
+            return Response({
+                "status": False,
+                "message": "Token is invalid or expired"
+            }, status=status.HTTP_401_UNAUTHORIZED)
 
 
 # Create your views here.
@@ -345,3 +403,109 @@ class ResetPasswordAPIView(APIView):
             "status": True,
             "message": "Password reset successfully"
         }, status=status.HTTP_200_OK)
+
+#resend otp 
+class ResendForgotPasswordOTPAPIView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        email = request.data.get("email")
+
+        if not email:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Email is required"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = Profiles.objects.get(email=email)
+
+        except Profiles.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Email not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        OTPVerification.objects.filter(
+            user=user,
+            purpose="forgot_password",
+            is_used=False
+        ).update(is_used=True)
+
+        # Generate Secret
+        secret = pyotp.random_base32()
+
+        # Generate OTP valid for 1 minute
+        totp = pyotp.TOTP(
+            secret,
+            interval=300
+        )
+
+        otp = totp.now()
+
+        OTPVerification.objects.create(
+            user=user,
+            otp=otp,
+            secret=secret,
+            purpose="forgot_password",
+            is_used=False,
+            attempts=0,
+            expires_at=timezone.now() + timedelta(minutes=1)
+        )
+
+        send_mail(
+            subject="OTP to Reset Your Password",
+            message=f"Your OTP is {otp}. It is valid for 1 minute.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False
+        )
+
+        return Response(
+            {
+                "status": True,
+                "message": "OTP resent successfully",
+            },
+            status=status.HTTP_200_OK
+        )
+    
+
+# logout api 
+class LogoutAPIView(APIView):
+    """
+    API to logout user by blacklisting the refresh token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response({
+                "status": False,
+                "message": "Refresh token is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response({
+                "status": True,
+                "message": "Logout successful"
+            }, status=status.HTTP_200_OK)
+
+        except TokenError:
+            return Response({
+                "status": False,
+                "message": "Invalid or expired refresh token"
+            }, status=status.HTTP_400_BAD_REQUEST)

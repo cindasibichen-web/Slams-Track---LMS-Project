@@ -1,3 +1,8 @@
+# models.py 
+
+
+
+
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
@@ -196,7 +201,7 @@ class StudentAcademicDetails(models.Model):
     admission_date = models.DateField(null=True, blank=True)
     previous_institute = models.TextField(null=True, blank=True)
     previous_qualifications = models.TextField(null=True, blank=True)
-    status = models.CharField(max_length=20, null=True, blank=True)  # e.g., active, graduated, etc.
+    status = models.CharField(max_length=20, null=True, blank=True)  
 
     def __str__(self):
         return f"{self.user.fullname if self.user.fullname else self.user.user_id} - Academic Details"
@@ -380,15 +385,118 @@ class TeachersTimeTable(models.Model):
     class_assigned = models.ForeignKey(ClassModel, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.teacher.staff_name} - {self.day_of_week} {self.period}"
+        return f"{self.teacher.staff_name} - {self.day_of_week} - period {self.period}"
     
 # attendance marking model 
+# attendance marking model 
 class StudentAttendance(models.Model):
+    STATUS_CHOICES = (
+        ('Present', 'Present'),
+        ('Absent', 'Absent'),
+        ('Late', 'Late'),
+        ('Half Day', 'Half Day'),
+    )
+    students_class = models.ForeignKey(ClassModel, on_delete=models.SET_NULL, null=True, blank=True)
     student = models.ForeignKey(Profiles, on_delete=models.CASCADE)
     date = models.DateField()
-    status = models.CharField(max_length=20)  # e.g., Present, Absent, Late
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)  # e.g., Present, Absent, Late
     remarks = models.TextField(null=True, blank=True)
+    reason = models.TextField(null=True, blank=True)
     taken_by = models.ForeignKey(StaffManagementModel, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('student', 'date')
 
     def __str__(self):
         return f"{self.student.fullname if self.student.fullname else self.student.user_id} - {self.date} - {self.status}"
+
+class TeacherLeave(models.Model):
+
+    LEAVE_TYPE_CHOICES = (
+        ("Casual Leave", "Casual Leave"),
+        ("Sick Leave", "Sick Leave"),
+        ("Emergency Leave", "Emergency Leave"),
+        ("Half Day Leave", "Half Day Leave"),
+        ("Permission", "Permission"),
+        ("Other", "Other"),
+    )
+
+    STATUS_CHOICES = (
+        ("Pending", "Pending"),
+        ("Approved", "Approved"),
+        ("Rejected", "Rejected"),
+    )
+
+    teacher = models.ForeignKey(
+        StaffManagementModel,
+        on_delete=models.CASCADE,
+        related_name="teacher_leaves"
+    )
+
+    leave_type = models.CharField(
+        max_length=50,
+        choices=LEAVE_TYPE_CHOICES
+    )
+
+    date = models.DateField()
+
+    from_date = models.DateField()
+
+    to_date = models.DateField()
+
+    no_of_days = models.PositiveIntegerField( null=True,
+        blank=True)
+
+    half_day_type = models.CharField(
+        max_length=20,
+        choices=(
+            ("First Half", "First Half"),
+            ("Second Half", "Second Half")
+        ),
+        null=True,
+        blank=True
+    )
+
+    reason = models.TextField()
+
+    reachable_contact_number = models.CharField(
+        max_length=15
+    )
+
+    supporting_document = models.FileField(
+        upload_to="leave_documents/",
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="Pending"
+    )
+    
+    SubstituteTeacher = models.CharField(
+        max_length=120,
+          null=True,
+        blank=True
+        
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.teacher.staff_name} - {self.leave_type}"    
+    
+
+# assign substitute teacher model
+class SubstituteTeacherAssignment(models.Model):
+    class_assigned = models.ForeignKey(ClassModel, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255)
+    original_teacher = models.ForeignKey(StaffManagementModel, on_delete=models.CASCADE, related_name='original_teacher_assignments')
+    substitute_teacher = models.ForeignKey(StaffManagementModel, on_delete=models.CASCADE, related_name='substitute_teacher_assignments')
+    date = models.DateField()
+    period = models.CharField(max_length=20)  # e.g., Period 1, Period 2
+    reason = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.class_assigned.class_name} - {self.subject} - {self.date} - {self.period}"

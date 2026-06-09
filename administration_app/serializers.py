@@ -4,6 +4,9 @@ import random
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction
+from decimal import Decimal
+
 
 # Student add serializer 
 #-------------------------------------------------Student------------------------------------------------------------------------------------
@@ -42,8 +45,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     financial_details = StudentFinancialDetailsSerializer(required=False)
     document_details = StudentDocumentDetailsSerializer(required=False)
 
-    category = serializers.SerializerMethodField()
-
     class Meta:
         model = Profiles
         fields = [
@@ -59,12 +60,42 @@ class StudentCreateSerializer(serializers.ModelSerializer):
             'document_details',
         ]
 
-    def get_category(self, obj):
-        return {
-            "id": obj.category.id,
-            "name": obj.category.name
-        } if obj.category else None
+    def validate(self, attrs):
+        academic_data = attrs.get("academic_details", {})
+        roll_number = academic_data.get("roll_number")
 
+        # If roll number manually entered → check uniqueness
+        if roll_number:
+            exists = StudentAcademicDetails.objects.filter(
+                roll_number=roll_number
+            ).exists()
+
+            if exists:
+                raise serializers.ValidationError({
+                    "roll_number": "This roll number already exists."
+                })
+
+        return attrs
+
+    def get_next_roll_number(self):
+        """
+        Auto-generate next roll number based on numeric max value
+        Example: 1, 2, 3 → next = 4
+        """
+        last = StudentAcademicDetails.objects.filter(
+            roll_number__isnull=False
+        ).exclude(roll_number="").order_by("-id").first()
+
+        if not last or not last.roll_number:
+            return "1"
+
+        match = re.search(r'(\d+)$', str(last.roll_number))
+        if match:
+            return str(int(match.group(1)) + 1)
+
+        return "1"
+
+    @transaction.atomic
     def create(self, validated_data):
 
         personal_data = validated_data.pop('personal_details', {})
@@ -75,12 +106,45 @@ class StudentCreateSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         logged_user = request.user
 
+        # -------------------------------
+        # HANDLE ROLL NUMBER LOGIC
+        # -------------------------------
+        roll_number = academic_data.get("roll_number")
+
+        if not roll_number:
+            roll_number = self.get_next_roll_number()
+
+        academic_data["roll_number"] = roll_number
+
+        # -------------------------------
+        # GENERATE USER ID
+        # -------------------------------
+        last_student = Profiles.objects.filter(
+            role="Student",
+            user_id__startswith="STD"
+        ).order_by("-id").first()
+
+        if last_student and last_student.user_id:
+            match = re.search(r'(\d+)$', last_student.user_id)
+            next_number = int(match.group(1)) + 1 if match else 1
+        else:
+            next_number = 1
+
+        user_id = f"STD{next_number:03d}"
+
+        # -------------------------------
+        # CREATE STUDENT PROFILE
+        # -------------------------------
         student = Profiles.objects.create(
+            user_id=user_id,
             role='Student',
-            category=logged_user.category,  # Same category as logged-in user
+            category=logged_user.category,
             **validated_data
         )
 
+        # -------------------------------
+        # CREATE RELATED TABLES
+        # -------------------------------
         StudentPersonalDetails.objects.create(
             user=student,
             **personal_data
@@ -103,32 +167,17 @@ class StudentCreateSerializer(serializers.ModelSerializer):
 
         return student
 
-
 class StudentListSerializer(serializers.ModelSerializer):
 
-    student_id = serializers.CharField(
-        source='user.user_id',
-        read_only=True
-    )
-
-    fullname = serializers.CharField(
-        source='user.fullname',
-        read_only=True
-    )
-
-    phone_number = serializers.CharField(
-        source='user.phone_number',
-        read_only=True
-    )
-
-    class_name = serializers.CharField(
-        source='student_class.class_name',
-        read_only=True
-    )
+    student_id = serializers.CharField(source='user.user_id', read_only=True)
+    fullname = serializers.CharField(source='user.fullname', read_only=True)
+    phone_number = serializers.CharField(source='user.phone_number', read_only=True)
+    class_name = serializers.CharField(source='student_class.class_name', read_only=True)
 
     section_roll = serializers.SerializerMethodField()
-
     fee_status = serializers.SerializerMethodField()
+    attendance_status = serializers.SerializerMethodField()
+    attendance_date = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentAcademicDetails
@@ -141,28 +190,135 @@ class StudentListSerializer(serializers.ModelSerializer):
             'section_roll',
             'admission_date',
             'fee_status',
-            'status',
+            'attendance_date',
+            'attendance_status',
+            'status'
         ]
 
+    # -----------------------
+    # SECTION + ROLL
+    # -----------------------
     def get_section_roll(self, obj):
         return {
             "section": obj.section,
             "roll_no": obj.roll_number
         }
 
+    # -----------------------
+    # FEE STATUS
+    # -----------------------
     def get_fee_status(self, obj):
         try:
-            financial = StudentFinancialDetails.objects.get(
-                user=obj.user
-            )
+            financial = StudentFinancialDetails.objects.get(user=obj.user)
 
-            if financial.balance_amount == 0:
+            paid_amount = financial.paid_amount or Decimal('0.00')
+            balance_amount = financial.balance_amount or Decimal('0.00')
+
+            if paid_amount > 0 and balance_amount == 0:
                 return "Paid"
 
             return "Pending"
 
         except StudentFinancialDetails.DoesNotExist:
             return "Pending"
+
+    # -----------------------
+    # ATTENDANCE STATUS (DATE FILTERED)
+    # -----------------------
+    def get_attendance_status(self, obj):
+
+        attendance_date = self.context.get('attendance_date')
+
+        attendance = StudentAttendance.objects.filter(
+            student=obj.user,
+            date=attendance_date
+        ).first()
+
+        return attendance.status if attendance else "Not Marked"
+
+    # -----------------------
+    # ATTENDANCE DATE
+    # -----------------------
+    def get_attendance_date(self, obj):
+
+        attendance_date = self.context.get('attendance_date')
+
+        attendance = StudentAttendance.objects.filter(
+            student=obj.user,
+            date=attendance_date
+        ).first()
+
+        return attendance.date if attendance else None
+        
+
+
+class StudentEditSerializer(serializers.Serializer):
+
+    # Profile
+    fullname = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+    phone_number = serializers.CharField(required=False)
+
+    # Personal
+    dob = serializers.DateField(required=False)
+    gender = serializers.CharField(required=False)
+    address = serializers.CharField(required=False)
+    blood_group = serializers.CharField(required=False)
+    father_name = serializers.CharField(required=False)
+    father_phone_number = serializers.CharField(required=False)
+    father_occupation = serializers.CharField(required=False)
+    mother_name = serializers.CharField(required=False)
+    mother_phone_number = serializers.CharField(required=False)
+    mother_occupation = serializers.CharField(required=False)
+
+    # Academic
+    student_class = serializers.IntegerField(required=False)
+    batch = serializers.CharField(required=False)
+    roll_number = serializers.CharField(required=False)
+    section = serializers.CharField(required=False)
+    student_type = serializers.CharField(required=False)
+    admission_id = serializers.CharField(required=False)
+    admission_date = serializers.DateField(required=False)
+    previous_institute = serializers.CharField(required=False)
+    previous_qualifications = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
+
+    # Financial
+    admission_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    course_fee = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    discount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    paid_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    payment_mode = serializers.CharField(required=False)
+    balance_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    installment_plan = serializers.CharField(required=False)
+
+    # Documents
+    student_photo = serializers.ImageField(required=False)
+    birth_certificate = serializers.FileField(required=False)
+    previous_school_tc = serializers.FileField(required=False)
+    aadhar_card = serializers.FileField(required=False)
+    parent_id_proof = serializers.FileField(required=False)
+    caste_certificate = serializers.FileField(required=False)
 
 
 # staffs managhement section serializers
@@ -346,6 +502,7 @@ class ListStaffSerializer(serializers.ModelSerializer):
             'id',
             'user_id',
             'staff_name',
+            'photo' ,
             'is_teacher',
             'gender',
             'dob',
@@ -459,4 +616,4 @@ class TeacherTimeTableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TeachersTimeTable
-        fields = '__all__'   
+        fields = '__all__'
