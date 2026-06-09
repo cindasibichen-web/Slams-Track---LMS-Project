@@ -1313,3 +1313,17 @@ class UserListAPIView(APIView):
             }, status=500)
         
 
+from django.shortcuts import render
+from rest_framework.permissions import IsAuthenticated
+
+
+class SettingsPageAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        return render(
+            request,
+            "Settings.html"
+        )

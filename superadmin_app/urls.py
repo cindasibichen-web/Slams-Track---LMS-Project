@@ -48,5 +48,9 @@ urlpatterns = [
 
    path('security/export-login-history-excel/',ExportLoginHistoryExcelAPIView.as_view(), name='export-login-history'),
 
-
+   path(
+    'settings-page/',
+    SettingsPageAPIView.as_view(),
+    name='settings-page'
+),
 ]
