@@ -27,8 +27,17 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
 
+    "slams-track-lms-project.onrender.com",
+
+]
+
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://slams-track-lms-project.onrender.com",
+]
 
 FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
 
