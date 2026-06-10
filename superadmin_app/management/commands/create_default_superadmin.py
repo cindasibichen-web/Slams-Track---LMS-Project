@@ -7,6 +7,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         email = 'admin@test.com'
+        user_id = 'SUP001'
 
         if Profiles.objects.filter(email=email).exists():
             self.stdout.write(
@@ -15,6 +16,7 @@ class Command(BaseCommand):
             return
 
         Profiles.objects.create_superuser(
+            user_id=user_id,
             email=email,
             password='Admin@123',
             fullname='Render Test Admin'
