@@ -9,9 +9,19 @@ class Command(BaseCommand):
         email = 'admin@test.com'
         user_id = 'SUP001'
 
-        if Profiles.objects.filter(email=email).exists():
+        existing_user = Profiles.objects.filter(email=email).first()
+
+        if existing_user:
+            existing_user.is_staff = True
+            existing_user.is_superuser = True
+            existing_user.is_active = True
+            existing_user.set_password('Admin@123')
+            existing_user.save()
+
             self.stdout.write(
-                self.style.WARNING('Default superadmin already exists.')
+                self.style.WARNING(
+                    'Default superadmin already exists. Updated staff, superuser status, and password.'
+                )
             )
             return
 
