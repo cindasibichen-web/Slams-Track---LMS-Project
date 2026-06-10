@@ -17,7 +17,6 @@ class Command(BaseCommand):
         Profiles.objects.create_superuser(
             email=email,
             password='Admin@123',
-            username='superadmin',
             fullname='Render Test Admin'
         )
 
