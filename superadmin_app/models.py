@@ -301,7 +301,7 @@ class StaffManagementModel(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     is_teacher = models.BooleanField(default=True)
-    student_class = models.ForeignKey('ClassModel', on_delete=models.SET_NULL, null=True, blank=True)
+    # student_class = models.ForeignKey('ClassModel', on_delete=models.SET_NULL, null=True, blank=True)
     # staff_role = models.CharField(max_length=100, choices=STAFF_ROLE_CHOICES)
 
 

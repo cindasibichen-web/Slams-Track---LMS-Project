@@ -139,14 +139,7 @@ class LoginAPIView(APIView):
 
     def post(self, request):
 
-        # serializer = LoginSerializer(data=request.data)
-        print("REQUEST DATA:", request.data)
-
         serializer = LoginSerializer(data=request.data)
-
-
-        print("SERIALIZER VALID:", serializer.is_valid())
-        print("SERIALIZER ERRORS:", serializer.errors)
 
 
 
@@ -373,35 +366,6 @@ class ListCategoryAPIView(APIView):
 
  # save the category such as school or college 
 
-# class AssignCategoryAPIView(APIView):
-
-    #     permission_classes = [IsAuthenticated]
-
-    #     def post(self, request):
-
-    #         category_id = request.data.get("category_id")
-
-    #         try:
-
-    #             category = Category.objects.get(id=category_id)
-
-    #         except Category.DoesNotExist:
-
-    #             return Response({
-    #                 "status": False,
-    #                 "message": "Category not found"
-    #             })
-
-    #         user = request.user
-
-    #         user.category = category
-    #         user.save()
-
-    #         return Response({
-    #             "status": True,
-    #             "message": "Category assigned successfully"
-    #         })
-
 
 # =================================== 
 # Profile Settings
@@ -413,6 +377,7 @@ class ProfileSettingsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
 
         try:
 
@@ -428,12 +393,12 @@ class ProfileSettingsAPIView(APIView):
 
         except Exception as e:
 
-            print("PROFILE FETCH ERROR =", str(e))
 
             return Response({
                 "status": False,
                 "message": "Unable to fetch profile details."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         
 class ProfileSettingsUpdateAPIView(APIView):
 

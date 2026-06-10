@@ -97,69 +97,69 @@ class ProfileSettingsSerializer(serializers.ModelSerializer):
 
     def get_designation(self, obj):
 
-        staff = getattr(
+        try:
 
-            obj,
+            staff = getattr(
+                obj,
+                'teacher_profile',
+                None
+            )
 
-            'teacher_profile',
+            return (
+                staff.designation
+                if staff
+                else None
+            )
 
-            None
+        except Exception as e:
 
-        )
+            print('DESIGNATION ERROR =', str(e))
 
-        return (
-
-            staff.designation
-
-            if staff
-
-            else None
-
-        )
-
+            return None
+    
     def get_department(self, obj):
 
-        staff = getattr(
+        try:
 
-            obj,
+            staff = getattr(
+                obj,
+                'teacher_profile',
+                None
+            )
 
-            'teacher_profile',
+            return (
+                staff.department
+                if staff
+                else None
+            )
 
-            None
+        except Exception as e:
 
-        )
+            print('DEPARTMENT ERROR =', str(e))
 
-        return (
-
-            staff.department
-
-            if staff
-
-            else None
-
-        )
+            return None
 
     def get_joining_date(self, obj):
 
-        staff = getattr(
+        try:
 
-            obj,
+            staff = getattr(
+                obj,
+                'teacher_profile',
+                None
+            )
 
-            'teacher_profile',
+            return (
+                staff.joining_date
+                if staff
+                else None
+            )
 
-            None
+        except Exception as e:
 
-        )
+            print('JOINING DATE ERROR =', str(e))
 
-        return (
-
-            staff.joining_date
-
-            if staff
-
-            else None
-
-        )
+        return None
 
     def get_assigned_by(self, obj):
 
