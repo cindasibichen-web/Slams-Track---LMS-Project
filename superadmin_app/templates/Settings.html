@@ -1064,7 +1064,7 @@
         if (!photoUrl.startsWith('http')) {
 
             photoUrl =
-                'http://127.0.0.1:8000' +
+                'https://slams-track-lms-project.onrender.com/' +
                 photoUrl;
         }
 
@@ -1367,7 +1367,7 @@
   }
 
   // PROFILE LOADING
-  const BASE_URL = 'http://127.0.0.1:8000/api';
+  const BASE_URL = 'https://slams-track-lms-project.onrender.com/api';
   let ACCESS_TOKEN =
       localStorage.getItem('access_token') || '';
 
@@ -1465,7 +1465,7 @@
           if (d.profile_photo) {
               let photoUrl = d.profile_photo;
               if (!photoUrl.startsWith('http')) {
-                  photoUrl = 'http://127.0.0.1:8000' + photoUrl;
+                  photoUrl = 'https://slams-track-lms-project.onrender.com/' + photoUrl;
               }
               document.getElementById('profile-photo').src = photoUrl;
               document.getElementById('profile-photo').style.display = 'block';
