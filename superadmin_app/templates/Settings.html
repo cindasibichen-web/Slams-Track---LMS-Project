@@ -890,28 +890,32 @@
 
           const csrfToken = getCookie('csrftoken');
 
+          console.log('CSRF TOKEN =', csrfToken);
+
+          if (!csrfToken) {
+              showToast('CSRF token not found. Refresh the page and try again.');
+              return;
+          }
+
           const response = await fetch(
-                `${window.location.origin}/api/login/`,
-                {
-                    method: 'POST',
+              `${window.location.origin}/api/login/`,
+              {
+                  method: 'POST',
 
-                    credentials: 'same-origin',
+                  credentials: 'include',
 
-                    headers: {
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': csrfToken,
+                      'X-Requested-With': 'XMLHttpRequest'
+                  },
 
-                        'Content-Type': 'application/json',
-
-                        'X-CSRFToken': csrfToken
-                    },
-
-                    body: JSON.stringify({
-
-                        user_id: userId,
-
-                        password: password
-                    })
-                }
-            );
+                  body: JSON.stringify({
+                      user_id: userId,
+                      password: password
+                  })
+              }
+          );
 
           const result =
               await response.json();
