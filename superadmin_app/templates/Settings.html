@@ -764,9 +764,12 @@
               `${BASE_URL}/settings/change-password/`,
               {
                   method: 'POST',
+                  credentials: 'same-origin',
                   headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                      Authorization: `Bearer ${ACCESS_TOKEN}`,
+                      'X-CSRFToken': getCookie('csrftoken'),
+                      'X-Requested-With': 'XMLHttpRequest'
                   },
                   body: JSON.stringify({
                       current_password: currentPassword,
@@ -994,8 +997,11 @@
 
         const response = await fetch(`${BASE_URL}/settings/profile/update/`, {
             method: 'PUT',
+            credentials: 'same-origin',
             headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`
+                Authorization: `Bearer ${ACCESS_TOKEN}`,
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: formData
         });
@@ -1026,9 +1032,12 @@
               `${BASE_URL}/settings/logout/`,
               {
                   method: 'POST',
+                  credentials: 'same-origin',
                   headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                      Authorization: `Bearer ${ACCESS_TOKEN}`,
+                      'X-CSRFToken': getCookie('csrftoken'),
+                      'X-Requested-With': 'XMLHttpRequest'
                   }
               }
           );
@@ -1163,9 +1172,12 @@
             `${BASE_URL}/security/reset-password/`,
             {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${ACCESS_TOKEN}`
+                    Authorization: `Bearer ${ACCESS_TOKEN}`,
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({
                     user_id: userId,
@@ -1235,9 +1247,12 @@
               `${BASE_URL}/security/session-signout/`,
               {
                   method: 'POST',
+                  credentials: 'same-origin',
                   headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                      Authorization: `Bearer ${ACCESS_TOKEN}`,
+                      'X-CSRFToken': getCookie('csrftoken'),
+                      'X-Requested-With': 'XMLHttpRequest'
                   },
                   body: JSON.stringify({
                       session_id: sessionId
@@ -1324,9 +1339,12 @@
               `${BASE_URL}/security/logout-all-devices/`,
               {
                   method: 'POST',
+                  credentials: 'same-origin',
                   headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${ACCESS_TOKEN}`
+                      Authorization: `Bearer ${ACCESS_TOKEN}`,
+                      'X-CSRFToken': getCookie('csrftoken'),
+                      'X-Requested-With': 'XMLHttpRequest'
                   }
               }
           );
