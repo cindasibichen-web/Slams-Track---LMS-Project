@@ -1157,16 +1157,16 @@ class ResetPasswordAPIView(APIView):
                 try:
 
                     send_mail(
-                        subject=
-                        "Password Reset",
-                        message=
-                        f"Temporary Password: "
-                        f"{temporary_password}",
-                        from_email=None,
-                        recipient_list=[
-                            user.email
-                        ],
-                        fail_silently=False
+                        subject="Password Reset",
+                        message=(
+                            f"Hello {user.fullname or user.user_id},\n\n"
+                            f"Your temporary password is:\n\n"
+                            f"{temporary_password}\n\n"
+                            f"Please log in and change your password immediately."
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
                     )
 
                     email_sent = True
