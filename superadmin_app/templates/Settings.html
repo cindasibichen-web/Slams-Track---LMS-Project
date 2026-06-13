@@ -841,6 +841,39 @@
       }
   }
 
+
+  function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (
+                    cookie.substring(
+                        0,
+                        name.length + 1
+                    ) === (name + '=')
+                ) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(
+                            name.length + 1
+                        )
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
   async function loginFromSettings() {
 
       try {
@@ -855,20 +888,30 @@
                   'login-password'
               ).value;
 
+          const csrfToken = getCookie('csrftoken');
+
           const response = await fetch(
-              `${BASE_URL}/login/`,
-              {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type':
-                      'application/json'
-                  },
-                  body: JSON.stringify({
-                      user_id: userId,
-                      password: password
-                  })
-              }
-          );
+                `${window.location.origin}/api/login/`,
+                {
+                    method: 'POST',
+
+                    credentials: 'same-origin',
+
+                    headers: {
+
+                        'Content-Type': 'application/json',
+
+                        'X-CSRFToken': csrfToken
+                    },
+
+                    body: JSON.stringify({
+
+                        user_id: userId,
+
+                        password: password
+                    })
+                }
+            );
 
           const result =
               await response.json();
