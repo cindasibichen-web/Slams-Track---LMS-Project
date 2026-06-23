@@ -516,6 +516,7 @@ class TokenRefreshAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print(request)
         print("AUTH HEADER =", request.headers.get("Authorization"))
         print("\n========== TOKEN REFRESH START ==========")
 
