@@ -37,12 +37,12 @@ DEBUG = config('DEBUG')
 #         '192.168.1.47'
 # ]
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1"
-).split(",")
+# ALLOWED_HOSTS = config(
+#     "ALLOWED_HOSTS",
+#     default="localhost,127.0.0.1"
+# ).split(",")
 
-# ALLOWED_HOSTS=lms-attendance.onrender.com,.onrender.com
+ALLOWED_HOSTS="https://slams-track-lms-project-7o67.onrender.com"
 
 FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
 
