@@ -27,18 +27,22 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = [
-        'localhost',
-        '127.0.0.1',
-        '192.168.1.92',
-        '192.168.1.21',
-        'localhost',
-        '127.0.0.1',
-        '*',
-        '192.168.1.47'
-]
+# ALLOWED_HOSTS = [
+#         'localhost',
+#         '127.0.0.1',
+#         '192.168.1.92',
+#         '192.168.1.21',
+#         'localhost',
+#         '127.0.0.1',
+#         '192.168.1.47'
+# ]
 
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1"
+).split(",")
 
+# ALLOWED_HOSTS=lms-attendance.onrender.com,.onrender.com
 
 FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
 
@@ -106,11 +110,18 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.21:5174",
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:5174",
+#     "http://192.168.1.21:5174",
+# ]
+
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default=""
+).split(",")
+
+# CSRF_TRUSTED_ORIGINS=https://lms-attendance.onrender.com
 
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
@@ -198,11 +209,17 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -224,6 +241,17 @@ REST_FRAMEWORK = {
     ),
 }
 
+
+SECURE_PROXY_SSL_HEADER = (
+    'HTTP_X_FORWARDED_PROTO',
+    'https'
+)
+
+SECURE_BROWSER_XSS_FILTER = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+X_FRAME_OPTIONS = 'DENY'
 
 
 from datetime import timedelta
