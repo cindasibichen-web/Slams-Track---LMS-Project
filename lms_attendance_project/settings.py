@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^@9h3!e@sae#kiorbej-g1em^u@o6s5u&-rvkinrqa0^gh91=g'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -35,7 +35,7 @@ ALLOWED_HOSTS = [
         'localhost',
         '127.0.0.1',
         '*',
-        '192.168.1.17'
+        '192.168.1.47'
 ]
 
 
@@ -253,11 +253,26 @@ SIMPLE_JWT = {
 
 
 # smtp settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'cb01262002@gmail.com'
-EMAIL_HOST_PASSWORD = 'vikw fvdl ofow vprh'
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'cb01262002@gmail.com'
+# EMAIL_HOST_PASSWORD = 'vikw fvdl ofow vprh'
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL",
+    default=EMAIL_HOST_USER
+)

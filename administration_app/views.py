@@ -117,26 +117,27 @@ class StudentDashboardKPIAPIView(APIView):
 class AddStudents(APIView):
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
-        print(request.data)
 
         serializer = StudentCreateSerializer(
             data=request.data,
-            
             context={"request": request}
         )
 
         if serializer.is_valid():
-            
+
             student = serializer.save()
-            # print(serializer.data)
 
             return Response(
                 {
                     "status": True,
                     "message": "Student created successfully",
-                    "data": StudentCreateSerializer(student).data
+                    "data": StudentCreateSerializer(
+                        student,
+                        context={"request": request}
+                    ).data
                 },
                 status=status.HTTP_201_CREATED
             )
