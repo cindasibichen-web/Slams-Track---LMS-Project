@@ -127,11 +127,21 @@ CSRF_TRUSTED_ORIGINS = config(
 
 # CSRF_TRUSTED_ORIGINS=https://lms-attendance.onrender.com
 
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+
+
+SECURE_PROXY_SSL_HEADER = (
+    'HTTP_X_FORWARDED_PROTO',
+    'https'
+)
+
+SECURE_BROWSER_XSS_FILTER = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
 ROOT_URLCONF = 'lms_attendance_project.urls'
@@ -220,6 +230,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -246,16 +259,9 @@ REST_FRAMEWORK = {
 }
 
 
-SECURE_PROXY_SSL_HEADER = (
-    'HTTP_X_FORWARDED_PROTO',
-    'https'
-)
 
-SECURE_BROWSER_XSS_FILTER = True
 
-SECURE_CONTENT_TYPE_NOSNIFF = True
-
-X_FRAME_OPTIONS = 'DENY'
+# X_FRAME_OPTIONS = 'DENY'
 
 
 from datetime import timedelta
