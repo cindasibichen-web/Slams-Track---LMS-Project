@@ -512,10 +512,11 @@ from django.db.models.functions import TruncMonth
 
 #   correct working api for refresh   
 class TokenRefreshAPIView(APIView):
-
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print("REFRESH API HIT")
         print(request)
         print("AUTH HEADER =", request.headers.get("Authorization"))
         print("\n========== TOKEN REFRESH START ==========")
