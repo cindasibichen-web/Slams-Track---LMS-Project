@@ -293,68 +293,68 @@ class CookieOrHeaderJWTAuthentication(JWTAuthentication):
 #         return None
     
     
-class SessionJWTAuthentication(JWTAuthentication):
+# class SessionJWTAuthentication(JWTAuthentication):
 
-    def authenticate(self, request):
+#     def authenticate(self, request):
 
-        result = super().authenticate(request)
+#         result = super().authenticate(request)
 
-        if result is None:
-            return None
+#         if result is None:
+#             return None
 
-        user, validated_token = result
+#         user, validated_token = result
 
-        token_jti = validated_token.get("jti")
+#         token_jti = validated_token.get("jti")
 
-        if not token_jti:
-            raise AuthenticationFailed(
-                "Invalid token."
-            )
+#         if not token_jti:
+#             raise AuthenticationFailed(
+#                 "Invalid token."
+#             )
 
-        current_version = validated_token.get(
-            "token_version",
-            1
-        )
+#         current_version = validated_token.get(
+#             "token_version",
+#             1
+#         )
 
-        if current_version != user.token_version:
-            raise AuthenticationFailed(
-                "Session invalidated."
-            )
+#         if current_version != user.token_version:
+#             raise AuthenticationFailed(
+#                 "Session invalidated."
+#             )
 
-        session = UserSession.objects.filter(
-            user=user,
-            session_id=token_jti,
-            is_active=True
-        ).first()
+#         session = UserSession.objects.filter(
+#             user=user,
+#             session_id=token_jti,
+#             is_active=True
+#         ).first()
 
-        if not session:
-            raise AuthenticationFailed(
-                "Session expired or signed out."
-            )
+#         if not session:
+#             raise AuthenticationFailed(
+#                 "Session expired or signed out."
+#             )
 
-        if (
-            session.expires_at and
-            session.expires_at < timezone.now()
-        ):
+#         if (
+#             session.expires_at and
+#             session.expires_at < timezone.now()
+#         ):
 
-            session.is_active = False
+#             session.is_active = False
 
-            session.save(
-                update_fields=["is_active"]
-            )
+#             session.save(
+#                 update_fields=["is_active"]
+#             )
 
-            raise AuthenticationFailed(
-                "Session expired."
-            )
+#             raise AuthenticationFailed(
+#                 "Session expired."
+#             )
 
-        session.last_activity = timezone.now()
+#         session.last_activity = timezone.now()
 
-        session.save(
-            update_fields=["last_activity"]
-        )
+#         session.save(
+#             update_fields=["last_activity"]
+#         )
 
-        return (
-            user,
-            validated_token
-        )
+#         return (
+#             user,
+#             validated_token
+#         )
     
