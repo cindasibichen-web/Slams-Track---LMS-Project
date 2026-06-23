@@ -63,7 +63,11 @@ class TeacherProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
+        # return Response({
+        #     "status": False,
+        #     "code": "MAINTENANCE_OR_TESTING",
+        #     "message": "Service Temporarily Unavailable for testing purposes."
+        # }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         print("USER ID:", request.user.id)
         print("USER:", request.user.user_id)
 
@@ -86,6 +90,45 @@ class TeacherProfileAPIView(APIView):
             "message": "Teacher profile retrieved successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+    
+# class TeacherProfileAPIView(APIView):
+
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         # return Response({
+#         #     "status": False,
+#         #     "code": "MAINTENANCE_OR_TESTING",
+#         #     "message": "Service Temporarily Unavailable for testing purposes."
+#         # }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+
+
+        
+
+#         print("USER ID:", request.user.id)
+#         print("USER:", request.user.user_id)
+
+#         teacher = StaffManagementModel.objects.filter(
+#             profiles=request.user
+#         ).first()
+
+#         print("TEACHER:", teacher)
+
+#         if not teacher:
+#             return Response({
+#                 "status": False,
+#                 "message": "Teacher profile not found"
+#             }, status=status.HTTP_404_NOT_FOUND)
+
+#         serializer = TeacherProfileSerializer(teacher)
+
+#         return Response({
+#             "status": True,
+#             "message": "Teacher profile retrieved successfully",
+#             "data": serializer.data
+#         }, status=status.HTTP_200_OK)
     
 
 
@@ -544,6 +587,7 @@ class ClassAttendanceHistoryAPIView(APIView):
     def get(self, request):
 
         attendance_date = request.GET.get("date")
+
         teacher = StaffManagementModel.objects.filter(
             profiles=request.user
         ).first()
@@ -554,21 +598,26 @@ class ClassAttendanceHistoryAPIView(APIView):
                 "message": "Teacher profile not found"
             }, status=status.HTTP_404_NOT_FOUND)
 
+
         if not attendance_date:
             return Response({
                 "status": False,
                 "message": "date is required"
             }, status=status.HTTP_400_BAD_REQUEST)
 
+
         assigned_class = ClassModel.objects.filter(
             class_teacher=teacher
         ).first()
+
 
         if not assigned_class:
             return Response({
                 "status": False,
                 "message": "No class assigned to this teacher"
             }, status=status.HTTP_404_NOT_FOUND)
+
+
 
         attendance_qs = StudentAttendance.objects.filter(
             students_class=assigned_class,
@@ -578,95 +627,282 @@ class ClassAttendanceHistoryAPIView(APIView):
             "taken_by"
         )
 
+
         total_students = StudentAcademicDetails.objects.filter(
             student_class=assigned_class
         ).count()
 
+
+
+        # Present + Late + Half day = Present count
         present_count = attendance_qs.filter(
-            status="Present"
+            status__in=[
+                "Present",
+                "Late",
+                "Half day"
+            ]
         ).count()
+
 
         absent_count = attendance_qs.filter(
             status="Absent"
         ).count()
 
+
         late_count = attendance_qs.filter(
             status="Late"
         ).count()
+
 
         half_day_count = attendance_qs.filter(
             status="Half day"
         ).count()
 
-        class_incharge = assigned_class.class_teacher.staff_name if assigned_class.class_teacher else None
+
+
+        class_incharge = (
+            assigned_class.class_teacher.staff_name
+            if assigned_class.class_teacher
+            else None
+        )
+
 
         attendance_taken_by = None
 
+
         first_record = attendance_qs.first()
 
+
         if first_record and first_record.taken_by:
+
             attendance_taken_by = {
                 "id": first_record.taken_by.id,
                 "name": first_record.taken_by.staff_name,
                 "staff_id": first_record.taken_by.profiles.user_id
             }
 
+
+
         absent_students = []
         late_students = []
         half_day_students = []
 
+
+
         for attendance in attendance_qs:
 
+
             student_data = {
+
                 "student_id": attendance.student.id,
                 "student_name": attendance.student.fullname,
                 "user_id": attendance.student.user_id,
                 "reason": attendance.reason,
                 "remarks": attendance.remarks,
                 "status": attendance.status
+
             }
 
+
+
             if attendance.status == "Absent":
+
                 absent_students.append(student_data)
 
+
             elif attendance.status == "Late":
+
                 late_students.append(student_data)
 
+
             elif attendance.status == "Half day":
+
                 half_day_students.append(student_data)
 
+
+
         return Response({
+
             "status": True,
+
             "message": "Attendance history fetched successfully",
 
+
             "class": {
+
                 "id": assigned_class.id,
-                "class_name": assigned_class.class_name,
-                "class_teacher": (
+
+                "class_name":
+                    f"{assigned_class.class_name}-{assigned_class.section}",
+
+                "class_teacher":
                     assigned_class.class_teacher.staff_name
                     if assigned_class.class_teacher
                     else None
-                )
             },
+
 
             "date": attendance_date,
 
+
             "summary": {
+
                 "total_students": total_students,
+
                 "present": present_count,
+
                 "absent": absent_count,
+
                 "late": late_count,
+
                 "half_day": half_day_count,
+
                 "class_incharge": class_incharge
+
             },
+
 
             "attendance_taken_by": attendance_taken_by,
 
+
             "absent_students": absent_students,
+
             "late_students": late_students,
+
             "half_day_students": half_day_students
 
+
         }, status=status.HTTP_200_OK)
+# class ClassAttendanceHistoryAPIView(APIView):
+
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+
+#         attendance_date = request.GET.get("date")
+#         teacher = StaffManagementModel.objects.filter(
+#             profiles=request.user
+#         ).first()
+
+#         if not teacher:
+#             return Response({
+#                 "status": False,
+#                 "message": "Teacher profile not found"
+#             }, status=status.HTTP_404_NOT_FOUND)
+
+#         if not attendance_date:
+#             return Response({
+#                 "status": False,
+#                 "message": "date is required"
+#             }, status=status.HTTP_400_BAD_REQUEST)
+
+#         assigned_class = ClassModel.objects.filter(
+#             class_teacher=teacher
+#         ).first()
+
+#         if not assigned_class:
+#             return Response({
+#                 "status": False,
+#                 "message": "No class assigned to this teacher"
+#             }, status=status.HTTP_404_NOT_FOUND)
+
+#         attendance_qs = StudentAttendance.objects.filter(
+#             students_class=assigned_class,
+#             date=attendance_date
+#         ).select_related(
+#             "student",
+#             "taken_by"
+#         )
+
+#         total_students = StudentAcademicDetails.objects.filter(
+#             student_class=assigned_class
+#         ).count()
+
+#         present_count = attendance_qs.filter(
+#             status="Present"
+#         ).count()
+
+#         absent_count = attendance_qs.filter(
+#             status="Absent"
+#         ).count()
+
+#         late_count = attendance_qs.filter(
+#             status="Late"
+#         ).count()
+
+#         half_day_count = attendance_qs.filter(
+#             status="Half day"
+#         ).count()
+
+#         class_incharge = assigned_class.class_teacher.staff_name if assigned_class.class_teacher else None
+
+#         attendance_taken_by = None
+
+#         first_record = attendance_qs.first()
+
+#         if first_record and first_record.taken_by:
+#             attendance_taken_by = {
+#                 "id": first_record.taken_by.id,
+#                 "name": first_record.taken_by.staff_name,
+#                 "staff_id": first_record.taken_by.profiles.user_id
+#             }
+
+#         absent_students = []
+#         late_students = []
+#         half_day_students = []
+
+#         for attendance in attendance_qs:
+
+#             student_data = {
+#                 "student_id": attendance.student.id,
+#                 "student_name": attendance.student.fullname,
+#                 "user_id": attendance.student.user_id,
+#                 "reason": attendance.reason,
+#                 "remarks": attendance.remarks,
+#                 "status": attendance.status
+#             }
+
+#             if attendance.status == "Absent":
+#                 absent_students.append(student_data)
+
+#             elif attendance.status == "Late":
+#                 late_students.append(student_data)
+
+#             elif attendance.status == "Half day":
+#                 half_day_students.append(student_data)
+
+#         return Response({
+#             "status": True,
+#             "message": "Attendance history fetched successfully",
+
+#             "class": {
+#                 "id": assigned_class.id,
+#                 "class_name": assigned_class.class_name,
+#                 "class_teacher": (
+#                     assigned_class.class_teacher.staff_name
+#                     if assigned_class.class_teacher
+#                     else None
+#                 )
+#             },
+
+#             "date": attendance_date,
+
+#             "summary": {
+#                 "total_students": total_students,
+#                 "present": present_count,
+#                 "absent": absent_count,
+#                 "late": late_count,
+#                 "half_day": half_day_count,
+#                 "class_incharge": class_incharge
+#             },
+
+#             "attendance_taken_by": attendance_taken_by,
+
+#             "absent_students": absent_students,
+#             "late_students": late_students,
+#             "half_day_students": half_day_students
+
+#         }, status=status.HTTP_200_OK)
 
 
     # teacher apply leave 
@@ -721,6 +957,7 @@ class ApplyTeacherLeaveAPIView(APIView):
         )
     
 
+# teachers leave list api 
 class TeacherLeaveListAPIView(APIView):
 
     permission_classes = [IsAuthenticated]

@@ -27,17 +27,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
-class Course(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-    name = models.CharField(max_length=100,null=True, blank=True)  
-    description = models.CharField(max_length=255,null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.name
-
 # main profile model 
 class Profiles(AbstractBaseUser, PermissionsMixin):
 
@@ -71,6 +60,16 @@ class Profiles(AbstractBaseUser, PermissionsMixin):
         Permission,
         blank=True
     )
+    photo = models.ImageField(upload_to='profile_photos/',null=True,blank=True)
+
+    address = models.TextField(null=True,blank=True)
+
+    gender = models.CharField(max_length=20,null=True,blank=True)
+    is_maintainance = models.BooleanField(default=False)
+    token_version = models.PositiveIntegerField(
+        default=1
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = 'user_id'
@@ -211,10 +210,18 @@ class StudentFinancialDetails(models.Model):
     payment_mode = models.CharField(max_length=50, null=True, blank=True)  # e.g., cash, card, online
     balance_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     installment_plan = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+
+    updated_at = models.DateTimeField(
+    auto_now=True,
+    null=True,
+    blank=True)
+
 
 
     def __str__(self):
         return f"{self.user.fullname if self.user.fullname else self.user.user_id} - Financial Details"
+
 
 
 class StudentDocumentDetails(models.Model):
@@ -242,17 +249,7 @@ class StaffManagementModel(models.Model):
         ('Other', 'Other'),
     )
 
-    # STAFF_ROLE_CHOICES = (
-    #     ('Administration staff', 'Administration staff'),
-    #     ('Non-administration staff', 'Non-administration staff'),
-    # )
-
-    # teacher_id = models.CharField(
-    #     max_length=100,
-    #     unique=True,
-    #     null=True,
-    #     blank=True
-    # )
+  
 
     profiles = models.OneToOneField(
         Profiles,
@@ -332,6 +329,7 @@ class StaffManagementModel(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     is_teacher = models.BooleanField(default=True)
+    is_block = models.BooleanField(default=False)
     
     # staff_role = models.CharField(max_length=100, choices=STAFF_ROLE_CHOICES)
 
@@ -458,12 +456,7 @@ class TeacherLeave(models.Model):
         max_length=15
     )
 
-    supporting_document = models.FileField(
-        upload_to="leave_documents/",
-        null=True,
-        blank=True
-    )
-
+   
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -482,6 +475,28 @@ class TeacherLeave(models.Model):
     def __str__(self):
         return f"{self.teacher.staff_name} - {self.leave_type}"
     
+
+    # teacher leave documents 
+class TeacherLeaveDocument(models.Model):
+
+    leave = models.ForeignKey(
+        TeacherLeave,
+        on_delete=models.CASCADE,
+        related_name="documents"
+    )
+
+    document = models.FileField(
+        upload_to="leave_documents/"
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return f"Document for Leave #{self.leave.id}"
+    
+
 
 # assign substitute teacher model
 class SubstituteTeacherAssignment(models.Model):
@@ -519,3 +534,220 @@ class TeacherstaffAttendance(models.Model):
 
     def __str__(self):
         return f"{self.teacher.staff_name} - {self.date} - {self.status}"
+    
+
+#  notification 
+class Notification(models.Model):
+    user = models.ForeignKey(Profiles, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+    
+
+# =========================
+# LOGIN HISTORY MODEL
+# =========================
+
+class LoginHistory(models.Model):
+
+    STATUS_SUCCESS = 'SUCCESS'
+    STATUS_FAILED = 'FAILED'
+    STATUS_LOGOUT = 'LOGOUT'
+
+    STATUS_CHOICES = [
+        (STATUS_SUCCESS, 'SUCCESS'),
+        (STATUS_FAILED, 'FAILED'),
+        (STATUS_LOGOUT, 'LOGOUT'),
+    ]
+
+    user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='login_histories'
+    )
+
+    login_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    logout_time = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    browser = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    raw_user_agent = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    login_status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SUCCESS,
+        db_index=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['login_status']),
+        ]
+
+    def __str__(self):
+        return (
+            # f"{self.user.user_id} | "
+            f"{self.login_status} | "
+            f"{self.created_at.strftime('%Y-%m-%d %H:%M')}"
+        )
+
+# =========================
+# ACTIVE SESSION MODEL
+# =========================
+
+class UserSession(models.Model):
+
+    user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        related_name='user_sessions'
+    )
+
+    session_id = models.CharField(
+        max_length=128,
+        unique=True,
+        db_index=True,
+        help_text='Stores JWT JTI (token identifier), not the full JWT token.'
+    )
+
+    token_version = models.PositiveIntegerField(
+        default=1
+    )
+
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    browser = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    last_activity = models.DateTimeField(
+        auto_now=True
+    )
+
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ] 
+
+    def __str__(self):
+        return (
+            f"{self.user.user_id} | "
+            f"{ 'Active' if self.is_active else 'Inactive' }"
+        )
+        
+
+# =========================
+# PASSWORD RESET AUDIT
+# =========================
+
+class PasswordResetAudit(models.Model):
+
+    target_user = models.ForeignKey(
+        Profiles,
+        on_delete=models.CASCADE,
+        related_name='password_resets'
+    )
+
+    reset_by = models.ForeignKey(
+        Profiles,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='performed_password_resets'
+    )
+
+    temporary_password_sent = models.BooleanField(
+        default=False
+    )
+
+    remarks = models.TextField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return (
+            f"{self.target_user.user_id} "
+            f"reset by "
+            f"{self.reset_by.user_id if self.reset_by else 'System'}"
+        )

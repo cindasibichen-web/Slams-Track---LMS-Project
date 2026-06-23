@@ -8,14 +8,20 @@ from rest_framework.permissions import AllowAny , IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from . pagination import ListPagination
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q , Sum
-from datetime import timedelta 
+from django.db.models import Q , Sum , F , DecimalField , ExpressionWrapper
+from datetime import datetime, date, timedelta
+from django.utils import timezone
 from django.db.models import Count
+from re import search
+from django.http import HttpResponse
+from openpyxl.styles import Font
+from openpyxl import Workbook
+from teachers_app.serializers import *
 # Create your views here.
 
 
 #****************************************************** student management section ********************************************************************
-# Add students 
+
 
 class StudentDashboardKPIAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -39,8 +45,11 @@ class StudentDashboardKPIAPIView(APIView):
         else:
             filter_date = date.today()
 
-        # Class Filter (ClassModel PK)
+        # Class Filter
         class_id = request.GET.get("class_id")
+
+        # Section Filter
+        section = request.GET.get("section")
 
         # Student Academic queryset
         academic_queryset = StudentAcademicDetails.objects.all()
@@ -50,37 +59,38 @@ class StudentDashboardKPIAPIView(APIView):
                 student_class_id=class_id
             )
 
+        if section:
+            academic_queryset = academic_queryset.filter(
+                section__iexact=section
+            )
+
         # Total Students
         total_students = academic_queryset.count()
 
-        # Student IDs of selected class
+        # Student IDs
         student_ids = academic_queryset.values_list(
             "user_id",
             flat=True
         )
 
-        # Attendance queryset
+        # Attendance
         attendance_queryset = StudentAttendance.objects.filter(
             student_id__in=student_ids,
             date=filter_date
         )
 
-        # Present
         present_students = attendance_queryset.filter(
             status="Present"
         ).count()
 
-        # Absent
         absent_students = attendance_queryset.filter(
             status="Absent"
         ).count()
 
-        # Applications Received
         applications_received = academic_queryset.filter(
             admission_date__year=filter_date.year
         ).count()
 
-        # Fee Pending
         fee_pending = StudentFinancialDetails.objects.filter(
             user_id__in=student_ids
         ).filter(
@@ -94,6 +104,7 @@ class StudentDashboardKPIAPIView(APIView):
             "data": {
                 "date": filter_date,
                 "class_id": class_id,
+                "section": section,
                 "total_students": total_students,
                 "present_students": present_students,
                 "absent_students": absent_students,
@@ -101,19 +112,25 @@ class StudentDashboardKPIAPIView(APIView):
                 "fee_pending": fee_pending
             }
         })
+    
+
 class AddStudents(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        print(request.data)
 
         serializer = StudentCreateSerializer(
             data=request.data,
+            
             context={"request": request}
         )
 
         if serializer.is_valid():
+            
             student = serializer.save()
+            # print(serializer.data)
 
             return Response(
                 {
@@ -131,24 +148,22 @@ class AddStudents(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST
         )
-        
-class StudentListAPIView(APIView):
 
+
+class StudentListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
-        queryset = StudentAcademicDetails.objects.filter(user__category=request.user.category
-).select_related(
+        queryset = StudentAcademicDetails.objects.select_related(
             'user',
             'student_class'
-        ).all().order_by('-id')
+        ).all()
 
         # -----------------------
         # SEARCH FILTER
         # -----------------------
         search = request.GET.get('search')
-
         if search:
             queryset = queryset.filter(
                 Q(user__fullname__icontains=search) |
@@ -156,75 +171,102 @@ class StudentListAPIView(APIView):
             )
 
         # -----------------------
-        # CLASS FILTER (PRIMARY KEY FIXED)
+        # CLASS FILTER
         # -----------------------
         class_id = request.GET.get('class_id')
-
         if class_id:
-            queryset = queryset.filter(
-                student_class_id=class_id
-            )
+            queryset = queryset.filter(student_class_id=class_id)
 
         # -----------------------
-        # DATE (REQUIRED)
+        # SECTION FILTER
         # -----------------------
-        attendance_date = request.GET.get('date')
-
-        if not attendance_date:
-            return Response({
-                "status": False,
-                "message": "date parameter is required. Example: ?date=2026-06-05"
-            }, status=400)
-
-        try:
-            attendance_date = datetime.strptime(attendance_date, "%Y-%m-%d").date()
-        except ValueError:
-            return Response({
-                "status": False,
-                "message": "Invalid date format. Use YYYY-MM-DD"
-            }, status=400)
+        section = request.GET.get('section')
+        if section:
+            queryset = queryset.filter(section__iexact=section)
 
         # -----------------------
-        # ATTENDANCE FILTER
+        # SESSION FILTER
         # -----------------------
-        attendance_queryset = StudentAttendance.objects.filter(
-            date=attendance_date
-        )
+        session = request.GET.get('session')
+        if session:
+            queryset = queryset.filter(batch__iexact=session)
 
-        status_filter = request.GET.get('status')
+        # -----------------------
+        # ATTENDANCE (NO DATE FILTER)
+        # Get latest attendance per student
+        # -----------------------
+        attendance_qs = StudentAttendance.objects.filter(
+            student__in=queryset.values_list('user_id', flat=True)
+        ).order_by('student_id', '-date')
 
-        if status_filter and status_filter.lower() != 'all':
-            attendance_queryset = attendance_queryset.filter(
-                status__iexact=status_filter
-            )
+        latest_attendance = {}
+        for att in attendance_qs:
+            if att.student_id not in latest_attendance:
+                latest_attendance[att.student_id] = att.status
 
-        student_ids = attendance_queryset.values_list('student_id', flat=True)
-
-        queryset = queryset.filter(
-            user_id__in=student_ids
-        )
+        # -----------------------
+        # SORTING
+        # -----------------------
+        queryset = queryset.order_by('user__fullname')
 
         # -----------------------
         # PAGINATION
         # -----------------------
         paginator = ListPagination()
-
-        paginated_queryset = paginator.paginate_queryset(
-            queryset,
-            request
-        )
+        paginated_queryset = paginator.paginate_queryset(queryset, request)
 
         serializer = StudentListSerializer(
             paginated_queryset,
             many=True,
             context={
-                "attendance_date": attendance_date
+                "attendance_map": latest_attendance
             }
         )
 
         return paginator.get_paginated_response(serializer.data)
-        
-        
+    
+    
+# automatic arrange roll number 
+
+class ArrangeRollNumbersAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        class_id = request.data.get("class_id")
+        section = request.data.get("section")
+
+        if not class_id:
+            return Response({
+                "status": False,
+                "message": "class_id is required"
+            }, status=400)
+
+        queryset = StudentAcademicDetails.objects.filter(
+            student_class_id=class_id
+        )
+
+        if section:
+            queryset = queryset.filter(
+                section__iexact=section
+            )
+
+        queryset = queryset.order_by(
+            'user__fullname'
+        )
+
+        for index, student in enumerate(queryset, start=1):
+            student.roll_number = str(index)
+            student.save(update_fields=['roll_number'])
+
+        return Response({
+            "status": True,
+            "message": "Roll numbers arranged successfully",
+            "total_students": queryset.count()
+        })
+    
+ # students overviews       
 class StudentoverviewAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -234,7 +276,7 @@ class StudentoverviewAPIView(APIView):
         try:
             personal = StudentPersonalDetails.objects.select_related(
                 "user"
-            ).get(id=id)
+            ).get(user__id=id)
 
         except StudentPersonalDetails.DoesNotExist:
             return Response(
@@ -247,22 +289,18 @@ class StudentoverviewAPIView(APIView):
 
         student = personal.user
 
-        # Academic Details
         academic = StudentAcademicDetails.objects.filter(
             user=student
         ).first()
 
-        # Financial Details
         financial = StudentFinancialDetails.objects.filter(
             user=student
         ).first()
 
-        # Document Details
         documents = StudentDocumentDetails.objects.filter(
             user=student
         ).first()
 
-        # Last 6 Months Leave Details (Absent Only)
         six_months_ago = timezone.now().date() - timedelta(days=180)
 
         absent_attendance = StudentAttendance.objects.filter(
@@ -288,9 +326,12 @@ class StudentoverviewAPIView(APIView):
             "student_id": student.user_id,
             "fullname": student.fullname,
 
+            # Student Photo
             "student_photo": (
-                request.build_absolute_uri(student.profile_picture.url)
-                if getattr(student, "profile_picture", None)
+                request.build_absolute_uri(
+                    documents.student_photo.url
+                )
+                if documents and documents.student_photo
                 else None
             ),
 
@@ -376,6 +417,7 @@ class StudentoverviewAPIView(APIView):
                 if documents and documents.birth_certificate
                 else None
             ),
+
             "previous_school_tc": (
                 request.build_absolute_uri(
                     documents.previous_school_tc.url
@@ -383,6 +425,7 @@ class StudentoverviewAPIView(APIView):
                 if documents and documents.previous_school_tc
                 else None
             ),
+
             "aadhar_card": (
                 request.build_absolute_uri(
                     documents.aadhar_card.url
@@ -390,6 +433,7 @@ class StudentoverviewAPIView(APIView):
                 if documents and documents.aadhar_card
                 else None
             ),
+
             "parent_id_proof": (
                 request.build_absolute_uri(
                     documents.parent_id_proof.url
@@ -397,6 +441,7 @@ class StudentoverviewAPIView(APIView):
                 if documents and documents.parent_id_proof
                 else None
             ),
+
             "caste_certificate": (
                 request.build_absolute_uri(
                     documents.caste_certificate.url
@@ -405,7 +450,7 @@ class StudentoverviewAPIView(APIView):
                 else None
             ),
 
-            # Leave Details (Last 6 Months)
+            # Leave Details
             "total_leave_days": absent_attendance.count(),
             "leave_details": leave_details
         }
@@ -418,7 +463,7 @@ class StudentoverviewAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
-     
+    
 class StudentCheckAdmissionIdAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -458,14 +503,49 @@ class StudentCheckAdmissionIdAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )        
+class SectionsdropAPIView(APIView):
 
+    def get(self, request):
+        class_id = request.query_params.get("class_id")
+
+        if not class_id:
+            return Response({
+                "status": False,
+                "message": "class_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            class_obj = ClassModel.objects.get(id=class_id)
+        except ClassModel.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Class not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        sections = (
+            ClassModel.objects
+            .filter(class_name=class_obj.class_name)
+            .exclude(section__isnull=True)
+            .exclude(section="")
+            .values_list("section", flat=True)
+            .distinct()
+        )
+
+        return Response({
+            "status": True,
+            "class_id": class_obj.id,
+            "class_name": class_obj.class_name,
+            "sections": list(sections)
+        }, status=status.HTTP_200_OK)
 
 
 class StudentEditAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def put(self, request, profile_id):
+        print(request.data)
 
         try:
             student = Profiles.objects.get(
@@ -482,128 +562,67 @@ class StudentEditAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = StudentEditSerializer(data=request.data)
+        serializer = StudentCreateSerializer(
+            student,
+            data=request.data,
+            partial=True,
+            context={
+                "request": request
+            }
+        )
 
-        if not serializer.is_valid():
+        if serializer.is_valid():
+
+            student = serializer.save()
+
             return Response(
                 {
-                    "status": False,
-                    "errors": serializer.errors
+                    "status": True,
+                    "message": "Student updated successfully",
+                    "data": StudentCreateSerializer(
+                        student
+                    ).data
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_200_OK
             )
-
-        data = serializer.validated_data
-
-        # Profile Update
-        student.fullname = data.get(
-            "fullname",
-            student.fullname
-        )
-        student.email = data.get(
-            "email",
-            student.email
-        )
-        student.phone_number = data.get(
-            "phone_number",
-            student.phone_number
-        )
-        student.save()
-
-        # Personal Details
-        personal, _ = StudentPersonalDetails.objects.get_or_create(
-            user=student
-        )
-
-        for field in [
-            "dob",
-            "gender",
-            "address",
-            "blood_group",
-            "father_name",
-            "father_phone_number",
-            "father_occupation",
-            "mother_name",
-            "mother_phone_number",
-            "mother_occupation",
-        ]:
-            if field in data:
-                setattr(personal, field, data[field])
-
-        personal.save()
-
-        # Academic Details
-        academic, _ = StudentAcademicDetails.objects.get_or_create(
-            user=student
-        )
-
-        if "student_class" in data:
-            academic.student_class_id = data["student_class"]
-
-        for field in [
-            "batch",
-            "roll_number",
-            "section",
-            "student_type",
-            "admission_id",
-            "admission_date",
-            "previous_institute",
-            "previous_qualifications",
-            "status",
-        ]:
-            if field in data:
-                setattr(academic, field, data[field])
-
-        academic.save()
-
-        # Financial Details
-        financial, _ = StudentFinancialDetails.objects.get_or_create(
-            user=student
-        )
-
-        for field in [
-            "admission_amount",
-            "course_fee",
-            "discount",
-            "paid_amount",
-            "payment_mode",
-            "balance_amount",
-            "installment_plan",
-        ]:
-            if field in data:
-                setattr(financial, field, data[field])
-
-        financial.save()
-
-        # Document Details
-        documents, _ = StudentDocumentDetails.objects.get_or_create(
-            user=student
-        )
-
-        for field in [
-            "student_photo",
-            "birth_certificate",
-            "previous_school_tc",
-            "aadhar_card",
-            "parent_id_proof",
-            "caste_certificate",
-        ]:
-            if field in data:
-                setattr(documents, field, data[field])
-
-        documents.save()
 
         return Response(
             {
-                "status": True,
-                "message": "Student details updated successfully"
+                "status": False,
+                "errors": serializer.errors
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_400_BAD_REQUEST
         )
     
+# classes list for dropdowns 
+class ListClassesForDropDowns(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        classes = ClassModel.objects.filter(category=request.user.category).order_by('class_name')
 
+        # seen = set()
+        data = []
 
+        for cls in classes:
+            if cls.class_name :
+                # seen.add(cls.class_name)
+
+                data.append({
+                    "id" : cls.id,
+                    "class_id": cls.class_id,
+                    "class_name": cls.class_name,
+                    "class_section": cls.section,
+                    "class_batch" : cls.batch,
+            
+                    # "cla"
+                })
+
+        return Response({
+            "status": True,
+            "message": "Data fetched successfully",
+            "data": data
+        })
 
 
 
@@ -614,7 +633,42 @@ class StaffManagementKPICards(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        pass
+        today = timezone.now().date()
+        category = request.user.category
+
+        # Base queryset filtered by user's category for data isolation
+        staff_qs = StaffManagementModel.objects.filter(profiles__category=category)
+
+        if request.user.role == "SuperAdmin":
+            staff_qs = StaffManagementModel.objects.all()
+
+
+        # Use .count() to return numeric values for KPI cards
+        total_staff_count = staff_qs.count()
+        teaching_staff_count = staff_qs.filter(is_teacher=True).count()
+        non_teaching_staff_count = staff_qs.filter(is_teacher=False).count()
+
+        # Filter attendance by current date, category, and teacher status
+        attendance_qs = TeacherstaffAttendance.objects.filter(
+            date=today,
+            teacher__profiles__category=category,
+            teacher__is_teacher=True
+        )
+
+        present_teachers = attendance_qs.filter(status='Present').count()
+        absent_teachers = attendance_qs.filter(status='Absent').count()
+
+        return Response({
+            "status": True,
+            "message": "Staff management KPI cards data retrieved successfully",
+            "data": {
+                "total_staffs": total_staff_count,
+                "teaching_staffs": teaching_staff_count,
+                "non_teaching_staffs": non_teaching_staff_count,
+                "todays_present_teachers": present_teachers,
+                "todays_absent_teachers": absent_teachers
+            }
+        }, status=status.HTTP_200_OK)
 
 
 class AddStaffManagementView(APIView):
@@ -657,6 +711,8 @@ class ListTeachingStaffAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
+        department = request.query_params.get("department")
         if request.user.role == "SuperAdmin":
             staff_members = StaffManagementModel.objects.all()
         else:
@@ -665,6 +721,11 @@ class ListTeachingStaffAPIView(APIView):
             staff_members = StaffManagementModel.objects.filter(
                 is_teacher=True,
                 profiles__category=request.user.category
+            )
+        # Optional department filter
+        if department:
+            staff_members = staff_members.filter(
+                department__iexact=department
             )
 
         paginator = ListPagination()
@@ -706,7 +767,49 @@ class ListNonTeachingStaffAPIView(APIView):
         serializer = ListStaffSerializer(paginated_queryset, many=True)
 
         return paginator.get_paginated_response(serializer.data)
-           
+
+
+# block unblock staffs
+class StaffBlockStatusAPIView(APIView):
+
+    def patch(self, request, staff_id):
+        try:
+            staff = StaffManagementModel.objects.get(id=staff_id)
+        except StaffManagementModel.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Staff not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        is_block = request.data.get("is_block")
+
+        if is_block is None:
+            return Response(
+                {
+                    "status": False,
+                    "message": "is_block field is required"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        staff.is_block = is_block
+        staff.save()
+
+        return Response(
+            {
+                "status": True,
+                "message": "Block status updated successfully",
+                "data": {
+                    "staff_id": staff.id,
+                    "staff_name": staff.staff_name,
+                    "is_block": staff.is_block
+                }
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 # edit staffs details 
@@ -798,8 +901,9 @@ class AcademicManagementKPICardsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self , request):
-        total_students = StudentPersonalDetails.objects.count(request.user.category)
-        total_teachers = StaffManagementModel.objects.filter(is_teacher=True,category=request.user.category).count()
+        total_students = StudentPersonalDetails.objects.filter(user__category=request.user.category).count()
+        # total_teachers = StaffManagementModel.objects.filterrequest.user.category)
+        total_teachers = StaffManagementModel.objects.filter(is_teacher=True,profiles__category=request.user.category).count()
         total_administration_staff = StaffManagementModel.objects.filter(profiles__role="Administration staff").count()
         total_non_administration_staff = StaffManagementModel.objects.filter(profiles__role="Non-administration staff").count()
 
@@ -819,8 +923,6 @@ class AcademicManagementKPICardsAPIView(APIView):
 
 
 
-       
-
 # class add list api 
 class AddListClassAPIView(APIView):
 
@@ -828,16 +930,16 @@ class AddListClassAPIView(APIView):
 
     def get(self, request):
 
-        if request.user.role == "SuperAdmin":
-            classes = ClassModel.objects.all()
-        else:
-
-
-         classes = ClassModel.objects.filter(
-            category=request.user.category
-        ).annotate(
+        # Base queryset with total student count
+        classes = ClassModel.objects.annotate(
             total_students=Count("studentacademicdetails")
         )
+
+        # Filter category for non-superadmin users
+        if request.user.role != "SuperAdmin":
+            classes = classes.filter(
+                category=request.user.category
+            )
 
         paginator = ListPagination()
 
@@ -849,14 +951,18 @@ class AddListClassAPIView(APIView):
         data = []
 
         for cls in paginated_classes:
+
             data.append({
                 "id": cls.id,
                 "class_id": cls.class_id,
                 "class_name": cls.class_name,
+                "class_batch": cls.batch,
                 "level": cls.level,
                 "section": cls.section,
                 "total_students": cls.total_students,
-                "status": cls.status
+                "status": cls.status,
+                "department": cls.department,
+                "branch": cls.branch,
             })
 
         return paginator.get_paginated_response(data)
@@ -883,10 +989,10 @@ class AddListClassAPIView(APIView):
         return Response({
             "status": False,
             "errors": serializer.errors    
-        })
+        },status=status.HTTP_400_BAD_REQUEST)
 
 
-      # edit class  api 
+# edit class  api 
 
 class EditClassAPIView(APIView):
 
@@ -918,7 +1024,28 @@ class EditClassAPIView(APIView):
             "status": False,
             "errors": serializer.errors    
         })
-    
+
+
+ # class details by class id 
+class ClassDetailsById(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, class_id):
+
+        try:
+            class_id = ClassModel.objects.get(id=class_id, category=request.user.category)
+        except ClassModel.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Class not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        serializers =   AddListEditClassSerializer(class_id)
+        return Response({
+            "status": True,
+            "message": "Class details fetched successfully",
+            "data": serializers.data})
+        
+        
+
 # filter classes 
 
 class FilterClassByBatchAPIView(APIView):
@@ -967,6 +1094,42 @@ class FilterClassByBatchAPIView(APIView):
         return paginator.get_paginated_response(data)
     
 
+# list sections by class name 
+class ClassSectionsAPIView(APIView):
+
+    def get(self, request):
+        class_id = request.query_params.get("class_id")
+
+        if not class_id:
+            return Response({
+                "status": False,
+                "message": "class_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            class_obj = ClassModel.objects.get(id=class_id)
+        except ClassModel.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Class not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        sections = (
+            ClassModel.objects
+            .filter(class_name=class_obj.class_name)
+            .exclude(section__isnull=True)
+            .exclude(section="")
+            .values_list("section", flat=True)
+            .distinct()
+        )
+
+        return Response({
+            "status": True,
+            "class_id": class_obj.id,
+            "class_name": class_obj.class_name,
+            "sections": list(sections)
+        }, status=status.HTTP_200_OK)
+    
 
 # add time table for teachers 
 class AddTeacherTimeTableAPIView(APIView):
@@ -996,6 +1159,7 @@ class AddTeacherTimeTableAPIView(APIView):
             "errors": serializer.errors    
         })
     
+
 # list each teachers timetable 
 class ListTeacherTimeTableAPIView(APIView):
 
@@ -1042,7 +1206,11 @@ class ListTeacherTimeTableAPIView(APIView):
                     timetable.class_assigned.class_name
                     if timetable.class_assigned
                     else None
-                )
+                ),
+                "class_id" : timetable.class_assigned.id if timetable.class_assigned else None,
+                "class_section": timetable.class_assigned.section if timetable.class_assigned else None,
+                "class_batch" : timetable.class_assigned.batch if timetable.class_assigned else None,
+                
             })
 
         return Response({
@@ -1086,18 +1254,98 @@ class EditTeacherTimeTableAPIView(APIView):
             "errors": serializer.errors    
         })
 
+
+#delete teachers time table 
+class DeleteTeachersTimeTable(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, time_table_id):
+
+        if not time_table_id:
+            return Response(
+                {
+                    "status": False,
+                    "message": "time_table_id is required"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            timetable = TeachersTimeTable.objects.get(id=time_table_id)
+
+        except TeachersTimeTable.DoesNotExist:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Time table not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        timetable.delete()
+
+        return Response(
+            {
+                "status": True,
+                "message": "Time table deleted successfully"
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+
+
+# list department for dropdown for filtering teachers   
+class DepartmentListAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        departments = (
+
+            StaffManagementModel.objects
+
+            .exclude(department__isnull=True)
+
+            .exclude(department__exact='')
+
+            .values_list('department', flat=True)
+
+            .distinct()
+
+            .order_by('department')
+
+        )
+
+        return Response({
+
+            "status": True,
+
+            "count": len(departments),
+
+            "data": [
+
+                {
+
+                    "department": department
+
+                }
+
+                for department in departments
+
+            ]
+
+        })
+
 #*************************** Assign substitute teacher section views ******************************************#####
 # todays absent teachers list api 
+
 class TodaysAbsentTeachersAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        
-
-
-
-
          
         today = timezone.now().date()
         absent_teachers_qs = TeacherLeave.objects.filter(teacher__profiles__category=request.user.category,
@@ -1137,7 +1385,7 @@ class TodaysAbsentTeachersAPIView(APIView):
         return Response({
             "status": True,
             "message": "Today's absent teachers fetched successfully",
-            "category": teacher.profiles.category.name,
+            "category": request.user.category.name if request.user.category else None,
             "date": today,
             "absent_teachers_count": len(absent_teachers),
             "absent_teachers": absent_teachers,
@@ -1333,6 +1581,30 @@ class AssignSubstituteTeacherAPIView(APIView):
             }
         )
 
+        # Notification for substitute teacher
+        Notification.objects.create(
+            user=substitute_teacher.profiles,
+            title="Substitute Class Assigned",
+            message=(
+                f"You have been assigned to take "
+                f"{assigned_class.class_name} ({assigned_class.section}) "
+                f"on {date}, Period {period}."
+                f"{f' Subject: {subject}.' if subject else ''}"
+            )
+        )
+
+        # Notification for original teacher
+        Notification.objects.create(
+            user=original_teacher.profiles,
+            title="Substitute Teacher Assigned",
+            message=(
+                f"{substitute_teacher.staff_name} has been assigned as your "
+                f"substitute teacher for {assigned_class.class_name} "
+                f"({assigned_class.section}) on {date}, Period {period}."
+                f"{f' Subject: {subject}.' if subject else ''}"
+            )
+        )
+
         return Response({
             "status": True,
             "message": "Substitute teacher assigned successfully",
@@ -1425,10 +1697,96 @@ class SubstituteTeacherAssignmentDetailAPIView(APIView):
                 "status": False,
                 "message": "Substitute teacher assignment not found"
             }, status=status.HTTP_404_NOT_FOUND)
+        
+# list all teachers leave api 
+class ListAllTeachersLeaveRequests(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+           
+           teachers = TeacherLeave.objects.all()
+           serializer = TeachersLeaveListSerializer(teachers, many=True)
+           return Response({
+               
+               "status": True ,
+                "message": "Teachers leave requests fetched successfully", 
+                "data": serializer.data        })
 
-# ==========================================
+
+
+# get details of leave \
+class LeaveDetailsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        leave_id = request.query_params.get("leave_id")
+
+        if not leave_id:
+            return Response({
+                "status": False,
+                "message": "leave_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            leave = TeacherLeave.objects.get(id=leave_id)
+        except TeacherLeave.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Leave not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TeachersLeaveListSerializer(leave)
+        return Response({
+            "status": True,
+            "message": "Leave details fetched successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    
+
+
+
+# approve  and reject leave
+class ApproveRejectTeachersLeaveRequests(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self , request):
+
+        leave_id = request.data.get("leave_id")
+        action = request.data.get("action")
+
+        if not leave_id or not action:
+            return Response({
+                "status": False,
+                "message": "leave_id and action are required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        leave_id = TeacherLeave.objects.get(id=leave_id)
+
+        if action == "approve":
+            leave_id.status = "Approved"
+        elif action == "reject":
+            leave_id.status = "Rejected"
+        else:
+            return Response({
+                "status": False,
+                "message": "Invalid action" 
+                }, status=status.HTTP_400_BAD_REQUEST)
+        leave_id.save()
+
+        return Response({
+            "status": True,
+            "message": "Teachers leave request updated successfully"
+            },
+            status=status.HTTP_200_OK)
+
+
+
+           
+
+# ==================================================================================================
 # FINANCE MANAGEMENT APIs
-# ==========================================
+# =================================================================================================
 
 class FinanceDashboardAPIView(APIView):
 
@@ -1534,6 +1892,7 @@ class AdmissionDetailAPIView(APIView):
                 'message': 'Student not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
+#  admission update 
 class AdmissionUpdateAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -1620,6 +1979,9 @@ class MultipleAdmissionDeleteAPIView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
     
 
+
+    
+
 # ==========================================
 # FINANCE REPORT APIs
 # ==========================================
@@ -1630,75 +1992,83 @@ class CourseReportAPIView(APIView):
 
     def get(self, request):
 
-        course_id = request.GET.get('course')
+        class_id = request.GET.get("class")
 
-        courses = Course.objects.all().order_by('name')
+        classes = ClassModel.objects.filter(
+    category=request.user.category
+).order_by("class_name")
 
-        if course_id:
-            courses = courses.filter(id=course_id)
+        if class_id:
+            classes = classes.filter(id=class_id)
 
         report_data = []
 
-        for course in courses:
+        for class_obj in classes:
 
             academic_records = StudentAcademicDetails.objects.filter(
-                courses=course
+                student_class=class_obj,student_class__category=request.user.category
             )
 
-            completed_students = academic_records.filter(
-                status__iexact='Completed'
+            active_students = academic_records.filter(
+                status__iexact="Active"
             ).count()
 
-            batch = academic_records.first().batch if academic_records.exists() else None
+            completed_students = academic_records.filter(
+                status__iexact="Completed"
+            ).count()
 
-            # Calculate duration from batch format like 2023-2026
-            if batch and '-' in batch:
-                try:
-                    start_year, end_year = batch.split('-')
-                    duration_years = int(end_year) - int(start_year)
-                    duration = f"{duration_years} Year" if duration_years == 1 else f"{duration_years} Years"
-                except Exception:
-                    duration = 'N/A'
-            else:
-                duration = 'N/A'
+            student_ids = academic_records.values_list(
+                "user_id",
+                flat=True
+            )
 
-            teacher_count = StaffManagementModel.objects.filter(
-                student_class__batch=batch,
-                is_teacher=True
-            ).count() if batch else 0
+            financials = StudentFinancialDetails.objects.filter(
+                user_id__in=student_ids
+            )
 
-            financial_records = StudentFinancialDetails.objects.filter(
-                user__studentacademicdetails__courses=course
+            revenue_generated = (
+                financials.aggregate(
+                    total=Sum("paid_amount")
+                )["total"] or 0
+            )
+
+            pending_fees = (
+                financials.aggregate(
+                    total=Sum("balance_amount")
+                )["total"] or 0
             )
 
             report_data.append({
-                'course_id': course.id,
-                'course_name': course.name,
-                'total_students': academic_records.count(),
-                'revenue_generated': financial_records.aggregate(
-                    total=Sum('paid_amount')
-                )['total'] or 0,
-                'pending_fees': financial_records.aggregate(
-                    total=Sum('balance_amount')
-                )['total'] or 0,
-                'batch': academic_records.first().batch if academic_records.exists() else None,
-                'status': academic_records.first().status if academic_records.exists() else None,
-                'duration': CourseReportSerializer.calculate_duration(batch),
-                'completed_students': completed_students,
-                'total_teachers': teacher_count
-
-            })  
+                "id": class_obj.id,
+                "course_standard": class_obj.class_name,
+                "section" : class_obj.section ,
+                "duration": ClassReportSerializer.calculate_duration(
+                    class_obj.batch
+                ),
+                "active_students": active_students,
+                "completed_students": completed_students,
+                "revenue_generated": revenue_generated,
+                "pending_fees": pending_fees,
+                "total_teachers": (
+                    1 if class_obj.class_teacher else 0
+                ),
+                "batch": class_obj.batch,
+                "status": class_obj.status,
+            })
 
         paginator = PageNumberPagination()
-        paginator.page_size = int(request.GET.get('page_size', 10))
+        paginator.page_size = int(
+            request.GET.get("page_size", 10)
+        )
 
-        result_page = paginator.paginate_queryset(report_data, request)
-
-        serializer = CourseReportSerializer(result_page, many=True)
+        result_page = paginator.paginate_queryset(
+            report_data,
+            request
+        )
 
         return paginator.get_paginated_response({
-            'status': True,
-            'data': serializer.data
+            "status": True,
+            "data": result_page
         })
 
 
@@ -1709,7 +2079,12 @@ class StudentReportAPIView(APIView):
     def get(self, request):
 
         queryset = Profiles.objects.filter(
-            role='Student'
+            role='Student',
+            studentacademicdetails__student_class__category=request.user.category
+        ).select_related(
+            'studentacademicdetails',
+            'studentpersonaldetails',
+            'studentfinancialdetails'
         ).order_by('-id')
 
         search = request.GET.get('search')
@@ -1717,15 +2092,31 @@ class StudentReportAPIView(APIView):
         if search:
             queryset = queryset.filter(
                 Q(fullname__icontains=search) |
-                Q(studentacademicdetails__admission_id__icontains=search)
+                Q(studentacademicdetails__admission_id__icontains=search) |
+                Q(studentacademicdetails__student_class__class_name__icontains=search)
+            )
+
+        class_id = request.GET.get('class')
+
+        if class_id:
+            queryset = queryset.filter(
+                studentacademicdetails__student_class_id=class_id
             )
 
         paginator = PageNumberPagination()
-        paginator.page_size = int(request.GET.get('page_size', 10))
+        paginator.page_size = int(
+            request.GET.get('page_size', 10)
+        )
 
-        result_page = paginator.paginate_queryset(queryset, request)
+        result_page = paginator.paginate_queryset(
+            queryset,
+            request
+        )
 
-        serializer = StudentReportSerializer(result_page, many=True)
+        serializer = StudentReportSerializer(
+            result_page,
+            many=True
+        )
 
         return paginator.get_paginated_response({
             'status': True,
@@ -1739,10 +2130,10 @@ class TeacherReportAPIView(APIView):
     def get(self, request):
 
         queryset = StaffManagementModel.objects.filter(
-            is_teacher=True
+            is_teacher=True,
+            profiles__category=request.user.category
         ).select_related(
-            'profiles',
-            'student_class'
+            'profiles'
         ).order_by('-id')
 
         search = request.GET.get('search')
@@ -1773,81 +2164,793 @@ class TeacherReportAPIView(APIView):
             'data': serializer.data
         })
     
+
+    
+from django.db.models.functions import ExtractMonth
+
+class RevenueMonthListAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        return Response({
+
+            "status": True,
+
+            "data": [
+
+                {"id":1,"name":"January"},
+                {"id":2,"name":"February"},
+                {"id":3,"name":"March"},
+                {"id":4,"name":"April"},
+                {"id":5,"name":"May"},
+                {"id":6,"name":"June"},
+                {"id":7,"name":"July"},
+                {"id":8,"name":"August"},
+                {"id":9,"name":"September"},
+                {"id":10,"name":"October"},
+                {"id":11,"name":"November"},
+                {"id":12,"name":"December"}
+
+            ]
+        })
+
+class RevenueYearListAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        years = (
+            StudentAcademicDetails.objects
+            .dates(
+                'admission_date',
+                'year'
+            )
+        )
+
+        return Response({
+            "status": True,
+            "data": [
+                {
+                    "year": year.year
+                }
+                for year in years
+            ]
+        })
+
 class RevenueReportAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
 
-        year = request.GET.get('year')
+        year = request.GET.get("year")
+        month = request.GET.get("month")
+
+        financial_queryset = StudentFinancialDetails.objects.all()
+
+        if request.user.role != "SuperAdmin":
+            financial_queryset = financial_queryset.filter(
+                user__category=request.user.category
+            )
+
+        if year and year != "All Year":
+            financial_queryset = financial_queryset.filter(
+                user__studentacademicdetails__admission_date__year=int(year)
+            )
+
+        revenue_expression = ExpressionWrapper(
+            F("admission_amount") +
+            F("course_fee") -
+            F("discount"),
+            output_field=DecimalField()
+        )
+
+        total_admission_revenue = (
+            financial_queryset.aggregate(
+                total=Sum(revenue_expression)
+            )["total"] or 0
+        )
+
+        total_fee_collection = (
+            financial_queryset.aggregate(
+                total=Sum("paid_amount")
+            )["total"] or 0
+        )
+
+        total_pending_amount = (
+            financial_queryset.aggregate(
+                total=Sum("balance_amount")
+            )["total"] or 0
+        )
+
+        staff_queryset = StaffManagementModel.objects.all()
+
+        if request.user.role != "SuperAdmin":
+            staff_queryset = staff_queryset.filter(
+                profiles__category=request.user.category
+            )
+
+        total_salary_expense = (
+            staff_queryset.aggregate(
+                total=Sum("monthly_salary")
+            )["total"] or 0
+        )
+
+        total_students = Profiles.objects.filter(
+            role="Student"
+        )
+
+        total_teachers = StaffManagementModel.objects.filter(
+            is_teacher=True
+        )
+
+        active_students = Profiles.objects.filter(
+            role="Student",
+            is_active=True
+        )
+
+        active_teachers = StaffManagementModel.objects.filter(
+            is_teacher=True,
+            profiles__is_active=True
+        )
+
+        if request.user.role != "SuperAdmin":
+
+            total_students = total_students.filter(
+                category=request.user.category
+            )
+
+            active_students = active_students.filter(
+                category=request.user.category
+            )
+
+            total_teachers = total_teachers.filter(
+                profiles__category=request.user.category
+            )
+
+            active_teachers = active_teachers.filter(
+                profiles__category=request.user.category
+            )
+
+        total_students = total_students.count()
+        total_teachers = total_teachers.count()
+        active_students = active_students.count()
+        active_teachers = active_teachers.count()
+
+        monthly_data = []
+
+        months_map = {
+            1: "January",
+            2: "February",
+            3: "March",
+            4: "April",
+            5: "May",
+            6: "June",
+            7: "July",
+            8: "August",
+            9: "September",
+            10: "October",
+            11: "November",
+            12: "December"
+        }
+
+        month_range = [int(month)] if month and month != "All Month" else range(1, 13)
+
+        for month_number in month_range:
+
+            month_financials = financial_queryset.filter(
+                user__studentacademicdetails__admission_date__month=month_number
+            )
+
+            monthly_data.append({
+                "month": month_number,
+                "month_name": months_map[month_number],
+                "admission_revenue": (
+                    month_financials.aggregate(
+                        total=Sum(revenue_expression)
+                    )["total"] or 0
+                ),
+                "fee_collection": (
+                    month_financials.aggregate(
+                        total=Sum("paid_amount")
+                    )["total"] or 0
+                ),
+
+                "pending_amount": (
+                    month_financials.aggregate(
+                        total=Sum("balance_amount")
+                    )["total"] or 0
+                ),
+                "salary_expense": total_salary_expense
+            })
+
+        return Response({
+            "status": True,
+            "filters": {
+                "year": year or "All Year",
+                "month": month or "All Month"
+            },
+            "summary": {
+                "total_admission_revenue": total_admission_revenue,
+                "total_fee_collection": total_fee_collection,
+                "total_pending_amount": total_pending_amount,
+                "total_salary_expense": total_salary_expense,
+                "total_students": total_students,
+                "total_teachers": total_teachers,
+                "active_students": active_students,
+                "active_teachers": active_teachers
+            },
+            "chart_data": monthly_data
+        }, status=status.HTTP_200_OK)
+
+
+
+
+
+# class RevenueReportAPIView(APIView):
+
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+
+#         year = request.GET.get("year")
+#         month = request.GET.get("month")
+
+#         financial_queryset = StudentFinancialDetails.objects.all()
+
+#         if request.user.role != "SuperAdmin":
+#             financial_queryset = financial_queryset.filter(
+#                 user__category=request.user.category
+#             )
+
+#         if year and year != "All Year":
+#             financial_queryset = financial_queryset.filter(
+#                 user__studentacademicdetails__admission_date__year=int(year)
+#             )
+
+#         revenue_expression = ExpressionWrapper(
+#             F("admission_amount") +
+#             F("course_fee") -
+#             F("discount"),
+#             output_field=DecimalField()
+#         )
+
+
+#         total_admission_revenue = (
+#             financial_queryset.aggregate(
+#                 total=Sum(revenue_expression)
+#             )["total"] or 0
+#         )
+
+#         total_fee_collection = (
+#             financial_queryset.aggregate(
+#                 total=Sum("paid_amount")
+#             )["total"] or 0
+#         )
+
+#         total_pending_amount = (
+#             financial_queryset.aggregate(
+#                 total=Sum("balance_amount")
+#             )["total"] or 0
+#         )
+
+#         staff_queryset = StaffManagementModel.objects.all()
+
+#         if request.user.role != "SuperAdmin":
+#             staff_queryset = staff_queryset.filter(
+#                 profiles__category=request.user.category
+#             )
+
+#         total_salary_expense = (
+#             staff_queryset.aggregate(
+#                 total=Sum("monthly_salary")
+#             )["total"] or 0
+#         )
+
+#         total_students = Profiles.objects.filter(
+#             role="Student"
+#         )
+
+#         total_teachers = StaffManagementModel.objects.filter(
+#             is_teacher=True
+#         )
+
+#         active_students = Profiles.objects.filter(
+#             role="Student",
+#             is_active=True
+#         )
+
+#         active_teachers = StaffManagementModel.objects.filter(
+#             is_teacher=True,
+#             profiles__is_active=True
+#         )
+
+#         if request.user.role != "SuperAdmin":
+
+#             total_students = total_students.filter(
+#                 category=request.user.category
+#             )
+
+#             active_students = active_students.filter(
+#                 category=request.user.category
+#             )
+
+#             total_teachers = total_teachers.filter(
+#                 profiles__category=request.user.category
+#             )
+
+#             active_teachers = active_teachers.filter(
+#                 profiles__category=request.user.category
+#             )
+
+#         total_students = total_students.count()
+#         total_teachers = total_teachers.count()
+#         active_students = active_students.count()
+#         active_teachers = active_teachers.count()
+
+#         monthly_data = []
+
+#         months_map = {
+#             1: "January",
+#             2: "February",
+#             3: "March",
+#             4: "April",
+#             5: "May",
+#             6: "June",
+#             7: "July",
+#             8: "August",
+#             9: "September",
+#             10: "October",
+#             11: "November",
+#             12: "December"
+#         }
+
+#         month_range = [int(month)] if month and month != "All Month" else range(1, 13)
+
+#         for month_number in month_range:
+
+#             month_financials = financial_queryset.filter(
+#                 user__studentacademicdetails__admission_date__month=month_number
+#             )
+
+#             monthly_data.append({
+#                 "month": month_number,
+#                 "month_name": months_map[month_number],
+#                 "admission_revenue": (
+#                     month_financials.aggregate(
+#                         total=Sum(revenue_expression)
+#                     )["total"] or 0
+#                 ),
+#                 "fee_collection": (
+#                     month_financials.aggregate(
+#                         total=Sum("paid_amount")
+#                     )["total"] or 0
+#                 ),
+
+#                 "pending_amount": (
+#                     month_financials.aggregate(
+#                         total=Sum("balance_amount")
+#                     )["total"] or 0
+#                 ),
+#                 "salary_expense": total_salary_expense
+#             })
+
+#         return Response({
+#             "status": True,
+#             "filters": {
+#                 "year": year or "All Year",
+#                 "month": month or "All Month"
+#             },
+#             "summary": {
+#                 "total_admission_revenue": total_admission_revenue,
+#                 "total_fee_collection": total_fee_collection,
+#                 "total_pending_amount": total_pending_amount,
+#                 "total_salary_expense": total_salary_expense,
+#                 "total_students": total_students,
+#                 "total_teachers": total_teachers,
+#                 "active_students": active_students,
+#                 "active_teachers": active_teachers
+#             },
+#             "chart_data": monthly_data
+#         }, status=status.HTTP_200_OK)
+    
+
+
+
+from django.shortcuts import render
+
+
+def finance_test(request):
+    return render(request, "test.html")
+
+
+#EXPORTS 
+
+class AdmissionExportAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        print("ADMISSION EXPORT HIT")
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Admissions"
+
+        ws.append([
+            "Admission ID",
+            "Student Name",
+            "Email",
+            "Course",
+            "Admission Date",
+            "Admission Amount",
+            "Paid Amount",
+            "Balance Amount",
+            "Payment Mode",
+            "Payment Status"
+        ])
+
+        queryset = StudentFinancialDetails.objects.select_related(
+            'user'
+        )
+
+        for obj in queryset:
+
+            try:
+                academic = obj.user.studentacademicdetails
+                course = (
+                    academic.courses.name
+                    if academic.courses else ''
+                )
+            except:
+                academic = None
+                course = ''
+
+            payment_status = (
+                "Paid"
+                if obj.balance_amount <= 0
+                else "Partial"
+            )
+
+            ws.append([
+                academic.admission_id if academic else '',
+                obj.user.fullname if obj.user else '',
+                obj.user.email if obj.user else '',
+                course,
+                academic.admission_date if academic else '',
+                obj.admission_amount,
+                obj.paid_amount,
+                obj.balance_amount,
+                obj.payment_mode,
+                payment_status
+            ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = (
+            'attachment; filename=admissions_report.xlsx'
+        )
+
+        wb.save(response)
+
+        return response
+    
+class StudentReportExportAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Students"
+
+        ws.append([
+            "Admission ID",
+            "Student Name",
+            "Phone Number",
+            "Parent Number",
+            "Course",
+            "Batch",
+            "Gender",
+            "Collected Fees",
+            "Pending Fees",
+            "Attendance Percentage",
+            "Status"
+
+        ])
+
+        students = Profiles.objects.filter(
+            role='Student'
+        )
+
+        for student in students:
+
+            try:
+                academic = student.studentacademicdetails
+                admission_id = academic.admission_id
+                course = academic.courses.name if academic.courses else ''
+                batch = academic.batch
+            except:
+                admission_id = ''
+                course = ''
+                batch = ''
+
+            try:
+                personal = student.studentpersonaldetails
+
+                gender = personal.gender
+                parent_number = (
+                    personal.parent_guardian_phone_number
+                )
+            except:
+                gender = ''
+                parent_number = ''
+
+            try:
+                financial = student.studentfinancialdetails
+
+                collected_fees = financial.paid_amount
+                pending_fees = financial.balance_amount
+            except:
+                collected_fees = 0
+                pending_fees = 0
+
+            # Replace later with actual attendance model
+            attendance_percentage = 'N/A'
+
+            ws.append([
+                admission_id,
+                student.fullname,
+                student.phone_number,
+                parent_number,
+                course,
+                batch,
+                gender,
+                collected_fees,
+                pending_fees,
+                attendance_percentage,
+                (
+                    "Active"
+                    if student.is_active
+                    else "Inactive"
+                )
+            ])
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = (
+            'attachment; filename=student_report.xlsx'
+        )
+
+        wb.save(response)
+
+        return response
+    
+class TeacherReportExportAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Teachers"
+
+        ws.append([
+            "Teacher ID",
+            "Teacher Name",
+            "Email",
+            "Phone Number",
+            "Joining Date",
+            "Designation",
+            "Department",
+            "Qualification",
+            "Experience",
+            "Incharge Class",
+            "Salary",
+            "Status"
+        ])
+
+        teachers = StaffManagementModel.objects.filter(
+            is_teacher=True
+        ).select_related('profiles')
+
+        for teacher in teachers:
+
+            ws.append([
+                teacher.profiles.user_id
+                if teacher.profiles else '',
+
+                teacher.staff_name,
+
+                teacher.profiles.email
+                if teacher.profiles else '',
+
+                teacher.profiles.phone_number
+                if teacher.profiles else '',
+
+                teacher.joining_date,
+
+                teacher.designation,
+
+                teacher.department,
+
+                teacher.qualification,
+
+                teacher.experience_year,
+
+                teacher.student_class.class_name
+                if teacher.student_class else '',
+
+                teacher.monthly_salary,
+
+                (
+                    "Active"
+                    if teacher.profiles
+                    and teacher.profiles.is_active
+                    else "Inactive"
+                )
+            ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = (
+            'attachment; filename=teacher_report.xlsx'
+        )
+
+        wb.save(response)
+
+        return response
+    
+
+class RevenueReportExportAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Revenue"
+
+        revenue_expression = ExpressionWrapper(
+            F("admission_amount") +
+            F("course_fee") -
+            F("discount"),
+            output_field=DecimalField()
+        )
 
         financial_queryset = StudentFinancialDetails.objects.all()
         staff_queryset = StaffManagementModel.objects.all()
         student_queryset = Profiles.objects.filter(role='Student')
-        teacher_queryset = StaffManagementModel.objects.filter(
-            is_teacher=True
+        teacher_queryset = StaffManagementModel.objects.filter(is_teacher=True)
+
+        if request.user.role != 'SuperAdmin':
+            financial_queryset = financial_queryset.filter(
+                user__category=request.user.category
+            )
+            staff_queryset = staff_queryset.filter(
+                profiles__category=request.user.category
+            )
+            student_queryset = student_queryset.filter(
+                category=request.user.category
+            )
+            teacher_queryset = teacher_queryset.filter(
+                profiles__category=request.user.category
+            )
+
+        total_admission_revenue = (
+            StudentFinancialDetails.objects.aggregate(
+                total=Sum(revenue_expression)
+            )['total'] or 0
         )
 
-        year = request.GET.get('year')
+        total_fee_collection = (
+            StudentFinancialDetails.objects.aggregate(
+                total=Sum('paid_amount')
+            )['total'] or 0
+        )
 
-        try:
+        total_pending_amount = (
+            StudentFinancialDetails.objects.aggregate(
+                total=Sum('balance_amount')
+            )['total'] or 0
+        )
 
-            if year and year != "All Year":
+        total_salary_expense = (
+            StaffManagementModel.objects.aggregate(
+                total=Sum('monthly_salary')
+            )['total'] or 0
+        )
 
-                year = int(year)
+        total_students = Profiles.objects.filter(
+            role='Student'
+        ).count()
 
-                financial_queryset = financial_queryset.filter(
-                    user__studentacademicdetails__admission_date__year=year
-                )
+        total_teachers = StaffManagementModel.objects.filter(
+            is_teacher=True
+        ).count()
 
-                student_queryset = student_queryset.filter(
-                    studentacademicdetails__admission_date__year=year
-                )
-
-        except ValueError:
-            pass
-
-        total_admission_revenue = financial_queryset.aggregate(
-            total=Sum('admission_amount')
-        )['total'] or 0
-
-        total_fee_collection = financial_queryset.aggregate(
-            total=Sum('paid_amount')
-        )['total'] or 0
-
-        total_pending_amount = financial_queryset.aggregate(
-            total=Sum('balance_amount')
-        )['total'] or 0
-
-        total_salary_expense = staff_queryset.aggregate(
-            total=Sum('monthly_salary')
-        )['total'] or 0
-
-        total_students = student_queryset.count()
-
-        total_teachers = teacher_queryset.count()
-
-        active_students = student_queryset.filter(
+        active_students = Profiles.objects.filter(
+            role='Student',
             is_active=True
         ).count()
 
-        active_teachers = teacher_queryset.filter(
+        active_teachers = StaffManagementModel.objects.filter(
+            is_teacher=True,
             profiles__is_active=True
         ).count()
 
-        return Response({
-            'status': True,
-            'data': {
-                'total_admission_revenue': total_admission_revenue,
-                'total_fee_collection': total_fee_collection,
-                'total_pending_amount': total_pending_amount,
-                'total_salary_expense': total_salary_expense,
-                'total_students': total_students,
-                'total_teachers': total_teachers,
-                'active_students': active_students,
-                'active_teachers': active_teachers
-            }
-        }, status=status.HTTP_200_OK)
-    
+        net_profit = (
+            total_fee_collection -
+            total_salary_expense
+        )
 
+        ws.append(["Metric", "Amount"])
 
+        ws.append([
+            "Total Admission Revenue",
+            total_admission_revenue
+        ])
+
+        ws.append([
+            "Total Fee Collection",
+            total_fee_collection
+        ])
+
+        ws.append([
+            "Total Pending Amount",
+            total_pending_amount
+        ])
+
+        ws.append([
+            "Total Salary Expense",
+            total_salary_expense
+        ])
+
+        ws.append([
+            "Net Profit",
+            net_profit
+        ])
+
+        ws.append([
+            "Total Students",
+            total_students
+        ])
+
+        ws.append([
+            "Total Teachers",
+            total_teachers
+        ])
+
+        ws.append([
+            "Active Students",
+            active_students
+        ])
+
+        ws.append([
+            "Active Teachers",
+            active_teachers
+        ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = (
+            'attachment; filename=revenue_report.xlsx'
+        )
+
+        wb.save(response)
+
+        return response

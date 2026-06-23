@@ -166,10 +166,84 @@ class StudentCreateSerializer(serializers.ModelSerializer):
         )
 
         return student
+    @transaction.atomic
+    def update(self, instance, validated_data):
+
+        personal_data = validated_data.pop(
+            "personal_details",
+            {}
+        )
+
+        academic_data = validated_data.pop(
+            "academic_details",
+            {}
+        )
+
+        financial_data = validated_data.pop(
+            "financial_details",
+            {}
+        )
+
+        document_data = validated_data.pop(
+            "document_details",
+            {}
+        )
+
+        # Profile
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        # Personal
+        personal, _ = StudentPersonalDetails.objects.get_or_create(
+            user=instance
+        )
+
+        for attr, value in personal_data.items():
+            setattr(personal, attr, value)
+
+        personal.save()
+
+        # Academic
+        academic, _ = StudentAcademicDetails.objects.get_or_create(
+            user=instance
+        )
+
+        for attr, value in academic_data.items():
+            setattr(academic, attr, value)
+
+        academic.save()
+
+        # Financial
+        financial, _ = StudentFinancialDetails.objects.get_or_create(
+            user=instance
+        )
+
+        for attr, value in financial_data.items():
+            setattr(financial, attr, value)
+
+        financial.save()
+
+        # Documents
+        documents, _ = StudentDocumentDetails.objects.get_or_create(
+            user=instance
+        )
+
+        for attr, value in document_data.items():
+            setattr(documents, attr, value)
+
+        documents.save()
+
+        return instance
 
 
 class StudentListSerializer(serializers.ModelSerializer):
 
+    id = serializers.IntegerField(
+        source='user.id',
+        read_only=True
+    )
     student_id = serializers.CharField(source='user.user_id', read_only=True)
     fullname = serializers.CharField(source='user.fullname', read_only=True)
     phone_number = serializers.CharField(source='user.phone_number', read_only=True)
@@ -178,7 +252,6 @@ class StudentListSerializer(serializers.ModelSerializer):
     section_roll = serializers.SerializerMethodField()
     fee_status = serializers.SerializerMethodField()
     attendance_status = serializers.SerializerMethodField()
-    attendance_date = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentAcademicDetails
@@ -191,7 +264,6 @@ class StudentListSerializer(serializers.ModelSerializer):
             'section_roll',
             'admission_date',
             'fee_status',
-            'attendance_date',
             'attendance_status',
             'status'
         ]
@@ -212,44 +284,21 @@ class StudentListSerializer(serializers.ModelSerializer):
         try:
             financial = StudentFinancialDetails.objects.get(user=obj.user)
 
-            paid_amount = financial.paid_amount or Decimal('0.00')
-            balance_amount = financial.balance_amount or Decimal('0.00')
+            paid_amount = financial.paid_amount or 0
+            balance_amount = financial.balance_amount or 0
 
-            if paid_amount > 0 and balance_amount == 0:
-                return "Paid"
-
-            return "Pending"
+            return "Paid" if paid_amount > 0 and balance_amount == 0 else "Pending"
 
         except StudentFinancialDetails.DoesNotExist:
             return "Pending"
 
     # -----------------------
-    # ATTENDANCE STATUS (DATE FILTERED)
+    # ATTENDANCE STATUS (FIXED)
     # -----------------------
     def get_attendance_status(self, obj):
+        attendance_map = self.context.get("attendance_map", {})
 
-        attendance_date = self.context.get('attendance_date')
-
-        attendance = StudentAttendance.objects.filter(
-            student=obj.user,
-            date=attendance_date
-        ).first()
-
-        return attendance.status if attendance else "Not Marked"
-
-    # -----------------------
-    # ATTENDANCE DATE
-    # -----------------------
-    def get_attendance_date(self, obj):
-
-        attendance_date = self.context.get('attendance_date')
-
-        attendance = StudentAttendance.objects.filter(
-            student=obj.user,
-            date=attendance_date
-        ).first()
-
-        return attendance.date if attendance else None
+        return attendance_map.get(obj.user_id, "Not Marked")
 
 
 class StudentEditSerializer(serializers.Serializer):
@@ -320,7 +369,6 @@ class StudentEditSerializer(serializers.Serializer):
     parent_id_proof = serializers.FileField(required=False)
     caste_certificate = serializers.FileField(required=False)
 
-
 # staffs managhement section serializers
 class StaffCreateSerializer(serializers.ModelSerializer):
 
@@ -356,6 +404,16 @@ class StaffCreateSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    address = serializers.CharField(
+        required=True,
+        write_only=True
+    )
+
+    gender = serializers.CharField(
+        required=True,
+        write_only=True
+    )
+
 
 
     class Meta:
@@ -379,6 +437,11 @@ class StaffCreateSerializer(serializers.ModelSerializer):
         email = validated_data.pop('email', None)
 
         phone_number = validated_data.pop('phone_number', None)
+
+        address = validated_data.pop('address', None)
+
+        gender = validated_data.pop('gender', None)
+
 
         request = self.context.get('request')
 
@@ -411,6 +474,8 @@ class StaffCreateSerializer(serializers.ModelSerializer):
                 email=email,
                 phone_number=phone_number,
                 role=role,
+                address=address,
+                gender=gender,
                 category=request.user.category,
                 password=make_password(temporary_password)
             )
@@ -456,11 +521,11 @@ Please change your password after first login.
 """
 
             send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [validated_data.get('email')],
-                fail_silently=False
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False
             )
 
         # =========================================
@@ -476,6 +541,8 @@ Please change your password after first login.
                 email=email,
                 phone_number=phone_number,
                 role=role,
+                address=address,
+                gender=gender,
                 category=request.user.category,
                 is_active=False
             )
@@ -485,6 +552,8 @@ Please change your password after first login.
    
         staff = StaffManagementModel.objects.create(
             profiles=profile_instance,
+            address=address,
+            gender=gender,
             **validated_data
         )
 
@@ -513,6 +582,16 @@ Please change your password after first login.
             None
         )
 
+        address = validated_data.pop(
+            "address",
+            None
+        )
+
+        gender = validated_data.pop(
+            "gender",
+            None
+        )
+
         profile = instance.profiles
 
         # ----------------------------
@@ -532,6 +611,12 @@ Please change your password after first login.
             profile.password = make_password(
                 temporary_password
             )
+        if address is not None:
+           instance.address = address
+
+        if gender is not None:
+              instance.gender = gender
+
 
         profile.save()
 
@@ -577,6 +662,13 @@ class ListStaffSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='profiles.email')
     phone_number = serializers.CharField(source='profiles.phone_number')
     category = serializers.CharField(source='profiles.category.name')
+    permissions = serializers.SlugRelatedField(
+    source='profiles.permissions',
+    many=True,
+    read_only=True,
+    slug_field='code'
+)
+
 
     class Meta:
         model = StaffManagementModel
@@ -584,9 +676,11 @@ class ListStaffSerializer(serializers.ModelSerializer):
             'id',
             'user_id',
             'staff_name',
+          
             'category',
             'photo' ,
             'is_teacher',
+            'subject_expertise',
             'gender',
             'dob',
             'address',
@@ -605,8 +699,14 @@ class ListStaffSerializer(serializers.ModelSerializer):
             'ifsc_code',
             'payroll_applicable',
             'created_at',
-            'notify_teacher'
+            'notify_teacher',
+            'permissions',
+              'is_block',
         ] 
+    def get_permissions(self, obj):
+        return list(
+            obj.profiles.permissions.values_list('code', flat=True)
+        )    
 
 
 # edit staff serializer
@@ -628,10 +728,13 @@ class AddListEditClassSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
+    subject_names = serializers.SerializerMethodField()
 
     class Meta:
         model = ClassModel
         fields = '__all__'
+    
+    
 
     def _get_subjects(self, subject_names):
 
@@ -661,6 +764,13 @@ class AddListEditClassSerializer(serializers.ModelSerializer):
             subject_objects.append(subject)
 
         return subject_objects
+    def get_subject_names(self, obj):
+        return list(
+            obj.subject.values_list(
+                "name",
+                flat=True
+            )
+        )
 
     def create(self, validated_data):
 
@@ -694,6 +804,7 @@ class AddListEditClassSerializer(serializers.ModelSerializer):
 
         return instance
     
+
  # teachers timetable serializer 
 class TeacherTimeTableSerializer(serializers.ModelSerializer):
 
@@ -702,6 +813,9 @@ class TeacherTimeTableSerializer(serializers.ModelSerializer):
         fields = '__all__'   
 
 
+# =============================================
+# FINANCE SECTION SERIALIZERS
+# =============================================
 # =============================================
 # FINANCE SECTION SERIALIZERS
 # =============================================
@@ -727,7 +841,7 @@ class AdmissionListSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    course = serializers.SerializerMethodField()
+    class_name = serializers.SerializerMethodField()
 
     payment_status = serializers.SerializerMethodField()
 
@@ -738,9 +852,11 @@ class AdmissionListSerializer(serializers.ModelSerializer):
             'id',
             'admission_id',
             'student_name',
-            'course',
+            'class_name',
             'admission_date',
             'admission_amount',
+            'course_fee',
+            'discount',
             'paid_amount',
             'balance_amount',
             'payment_mode',
@@ -753,12 +869,12 @@ class AdmissionListSerializer(serializers.ModelSerializer):
         except Exception:
             return ''
 
-    def get_course(self, obj):
+    def get_class_name(self, obj):
         try:
             academic = obj.user.studentacademicdetails
 
-            if academic.courses:
-                return academic.courses.name
+            if academic.student_class:
+                return academic.student_class.class_name
 
             return None
 
@@ -796,6 +912,8 @@ class AdmissionDetailSerializer(serializers.ModelSerializer):
     course = serializers.SerializerMethodField()
     gender = serializers.SerializerMethodField()
     admission_amount = serializers.SerializerMethodField()
+    course_fee = serializers.SerializerMethodField()
+    discount = serializers.SerializerMethodField()
     paid_amount = serializers.SerializerMethodField()
     balance_amount = serializers.SerializerMethodField()
     payment_mode = serializers.SerializerMethodField()
@@ -818,6 +936,8 @@ class AdmissionDetailSerializer(serializers.ModelSerializer):
                 'course',
                 'gender',
                 'admission_amount',
+                'course_fee',
+                'discount',
                 'paid_amount',
                 'balance_amount',
                 'payment_mode',
@@ -847,6 +967,18 @@ class AdmissionDetailSerializer(serializers.ModelSerializer):
             return academic.courses.name if academic.courses else None
         except Exception:
             return None
+        
+    def get_course_fee(self, obj):
+        try:
+            return obj.studentfinancialdetails.course_fee
+        except Exception:
+            return 0
+
+    def get_discount(self, obj):
+        try:
+            return obj.studentfinancialdetails.discount
+        except Exception:
+            return 0
 
     def get_gender(self, obj):
         try:
@@ -966,6 +1098,7 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
     document_details = StudentDocumentDetailsSerializer(required=False)
 
     class Meta:
+
         model = Profiles
 
         fields = [
@@ -985,6 +1118,7 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
         if personal_data:
 
             if 'father_name' in personal_data:
+
                 personal_data['parent_guardian_name'] = (
                     personal_data.pop('father_name')
                 )
@@ -993,18 +1127,70 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
 
         if financial_data:
 
-            admission_amount = float(
-                financial_data.get('admission_amount') or 0
+            current_financial = None
+
+            if self.instance:
+
+                current_financial = (
+                    StudentFinancialDetails.objects.filter(
+                        user=self.instance
+                    ).first()
+                )
+
+            admission_amount = Decimal(
+                financial_data.get(
+                    'admission_amount',
+                    getattr(
+                        current_financial,
+                        'admission_amount',
+                        0
+                    )
+                ) or 0
             )
 
-            paid_amount = float(
-                financial_data.get('paid_amount') or 0
+            course_fee = Decimal(
+                financial_data.get(
+                    'course_fee',
+                    getattr(
+                        current_financial,
+                        'course_fee',
+                        0
+                    )
+                ) or 0
             )
 
-            if paid_amount > admission_amount:
+            discount = Decimal(
+                financial_data.get(
+                    'discount',
+                    getattr(
+                        current_financial,
+                        'discount',
+                        0
+                    )
+                ) or 0
+            )
+
+            paid_amount = Decimal(
+                financial_data.get(
+                    'paid_amount',
+                    getattr(
+                        current_financial,
+                        'paid_amount',
+                        0
+                    )
+                ) or 0
+            )
+
+            total_payable = (
+                course_fee -
+                discount
+            )
+
+            if paid_amount > total_payable:
+
                 raise serializers.ValidationError({
                     'paid_amount':
-                    'Paid amount cannot exceed admission amount.'
+                    'Paid amount cannot exceed total payable amount.'
                 })
 
         return attrs
@@ -1032,73 +1218,106 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
         )
 
         # PROFILE UPDATE
+
         for attr, value in validated_data.items():
+
             setattr(instance, attr, value)
 
         instance.save()
 
         # PERSONAL UPDATE
+
         if personal_data:
 
-            personal, _ = StudentPersonalDetails.objects.get_or_create(
-                user=instance
+            personal, _ = (
+                StudentPersonalDetails.objects.get_or_create(
+                    user=instance
+                )
             )
 
             if 'father_name' in personal_data:
+
                 personal_data['parent_guardian_name'] = (
                     personal_data.pop('father_name')
                 )
 
             for key, value in personal_data.items():
+
                 setattr(personal, key, value)
 
             personal.save()
 
         # ACADEMIC UPDATE
+
         if academic_data:
 
-            academic, _ = StudentAcademicDetails.objects.get_or_create(
-                user=instance
+            academic, _ = (
+                StudentAcademicDetails.objects.get_or_create(
+                    user=instance
+                )
             )
 
             for key, value in academic_data.items():
+
                 setattr(academic, key, value)
 
             academic.save()
 
         # FINANCIAL UPDATE
+
         if financial_data:
 
-            financial, _ = StudentFinancialDetails.objects.get_or_create(
-                user=instance
+            financial, _ = (
+                StudentFinancialDetails.objects.get_or_create(
+                    user=instance
+                )
             )
 
             for key, value in financial_data.items():
+
                 setattr(financial, key, value)
 
-            admission_amount = float(
+            admission_amount = Decimal(
                 financial.admission_amount or 0
             )
 
-            paid_amount = float(
+            course_fee = Decimal(
+                financial.course_fee or 0
+            )
+
+            discount = Decimal(
+                financial.discount or 0
+            )
+
+            paid_amount = Decimal(
                 financial.paid_amount or 0
             )
 
+            total_payable = (
+                course_fee -
+                discount
+            )
+
             financial.balance_amount = max(
-                admission_amount - paid_amount,
-                0
+                total_payable - paid_amount,
+                Decimal("0")
             )
 
             financial.save()
 
         # DOCUMENT UPDATE
+
         if document_data:
 
-            document, _ = StudentDocumentDetails.objects.get_or_create(
-                user=instance
+            document, _ = (
+                StudentDocumentDetails.objects.get_or_create(
+                    user=instance
+                )
             )
 
             for key, value in document_data.items():
+
+
                 setattr(document, key, value)
 
             document.save()
@@ -1106,9 +1325,6 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
         instance.refresh_from_db()
 
         return instance
-    
-
-
         
 class MultipleAdmissionDeleteSerializer(serializers.Serializer):
 
@@ -1121,43 +1337,49 @@ class MultipleAdmissionDeleteSerializer(serializers.Serializer):
 # REPORT SECTION SERIALIZERS
 # =============================================
 
-class CourseReportSerializer(serializers.Serializer):
+class ClassReportSerializer(serializers.Serializer):
 
-    course_id = serializers.IntegerField()
-    course_name = serializers.CharField()
-
-    total_students = serializers.IntegerField()
-
-    revenue_generated = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2
-    )
-
-    pending_fees = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=2
-    )
-
-    batch = serializers.CharField(
-        allow_null=True
-    )
-
-    status = serializers.CharField(
-        allow_null=True
-    )
-
-    duration = serializers.CharField(allow_null=True)
+    id = serializers.IntegerField()
+    course_standard = serializers.CharField()
+    duration = serializers.CharField()
+    active_students = serializers.IntegerField()
     completed_students = serializers.IntegerField()
+    revenue_generated = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
+    pending_fees = serializers.DecimalField(
+        max_digits=15,
+        decimal_places=2
+    )
     total_teachers = serializers.IntegerField()
+    batch = serializers.CharField(
+        allow_null=True,
+        required=False
+    )
+    status = serializers.CharField(
+        allow_null=True,
+        required=False
+    )
 
+    @staticmethod
     def calculate_duration(batch):
-        try:
-            start_year, end_year = batch.split('-')
-            duration = int(end_year) - int(start_year)
-            return f"{duration} Year" if duration == 1 else f"{duration} Years"
-        except:
-            return "N/A"
 
+        if batch and "-" in batch:
+            try:
+                start_year, end_year = batch.split("-")
+                years = int(end_year) - int(start_year)
+
+                return (
+                    f"{years} Year"
+                    if years == 1
+                    else f"{years} Years"
+                )
+
+            except Exception:
+                pass
+
+        return "N/A"
 
 class StudentReportSerializer(serializers.ModelSerializer):
 
@@ -1166,7 +1388,7 @@ class StudentReportSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    course = serializers.SerializerMethodField()
+    class_name = serializers.SerializerMethodField()
 
     gender = serializers.SerializerMethodField()
 
@@ -1179,6 +1401,8 @@ class StudentReportSerializer(serializers.ModelSerializer):
     attendance_percentage = serializers.SerializerMethodField()
 
     student_status = serializers.SerializerMethodField()
+
+    section = serializers.SerializerMethodField()
 
     email = serializers.EmailField(read_only=True)
 
@@ -1193,7 +1417,8 @@ class StudentReportSerializer(serializers.ModelSerializer):
             'email',
             'phone_number',
             'admission_id',
-            'course',
+            'class_name',
+            'section',
             'gender',
             'collected_fees',
             'attendance_percentage',
@@ -1202,48 +1427,46 @@ class StudentReportSerializer(serializers.ModelSerializer):
             'student_status'
         ]
 
-    def get_course(self, obj):
-
+    def get_class_name(self, obj):
         try:
-            return obj.studentacademicdetails.courses.name
+            return obj.studentacademicdetails.student_class.class_name
+        except Exception:
+            return None
+
+    def get_section(self, obj):
+        try:
+            return obj.studentacademicdetails.student_class.section
         except Exception:
             return None
 
     def get_gender(self, obj):
-
         try:
             return obj.studentpersonaldetails.gender
         except Exception:
             return None
 
     def get_collected_fees(self, obj):
-
         try:
             return obj.studentfinancialdetails.paid_amount
         except Exception:
             return 0
 
     def get_batch(self, obj):
-
         try:
             return obj.studentacademicdetails.batch
         except Exception:
             return None
 
     def get_parent_number(self, obj):
-
         try:
             return obj.studentpersonaldetails.parent_guardian_phone_number
         except Exception:
             return None
 
     def get_attendance_percentage(self, obj):
-
-        # Attendance module not implemented yet
         return "N/A"
 
     def get_student_status(self, obj):
-
         try:
             return obj.studentacademicdetails.status
         except Exception:
@@ -1302,13 +1525,55 @@ class TeacherReportSerializer(serializers.ModelSerializer):
         ]
 
     def get_incharge_class(self, obj):
-        return obj.student_class.class_name if obj.student_class else None
-    
+
+        class_obj = ClassModel.objects.filter(
+            class_teacher=obj
+        ).first()
+
+        return class_obj.class_name if class_obj else None
+
     def get_incharge_classes(self, obj):
-        return self.get_incharge_class(obj)
+
+        classes = ClassModel.objects.filter(
+            class_teacher=obj
+        ).values_list(
+            'class_name',
+            flat=True
+        )
+
+        return list(classes)
 
     def get_attendance_percentage(self, obj):
         return "N/A"
 
     def get_status(self, obj):
-        return "Active" if obj.profiles.is_active else "Inactive"        
+
+        if obj.profiles:
+            return "Active" if obj.profiles.is_active else "Inactive"
+
+        return "Inactive"
+    
+# all teachers leave requests serializer 
+
+class TeachersLeaveListSerializer(serializers.ModelSerializer):
+
+    teacher_id = serializers.CharField(source='teacher.profiles.user_id', read_only=True)
+    teacher_name = serializers.CharField(source='teacher.staff_name', read_only=True)
+    department = serializers.CharField(source='teacher.department', read_only=True)
+    designation = serializers.CharField(source='teacher.designation', read_only=True)
+
+    class Meta:
+        model = TeacherLeave
+        fields = [
+            'id',
+            'teacher_id',
+            'teacher_name',
+            'department',
+            'designation',
+            'leave_type',
+            'from_date',
+            'to_date',
+            'reason',
+            'status',
+            'created_at'
+        ]

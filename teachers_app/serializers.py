@@ -4,6 +4,99 @@ from django.utils import timezone
 
 
 # teachers profile get serializer 
+# class TeacherProfileSerializer(serializers.ModelSerializer):
+#     user_id = serializers.CharField(source='profiles.user_id', read_only=True)
+#     email = serializers.EmailField(source='profiles.email', read_only=True)
+#     phone_number = serializers.CharField(source='profiles.phone_number', read_only=True)
+#     role = serializers.CharField(source='profiles.role', read_only=True)
+#     category = serializers.CharField(
+#         source='profiles.category.name',
+#         read_only=True
+#     )
+#     assigned_class = serializers.SerializerMethodField()
+#     class Meta:
+#         model = StaffManagementModel
+#         fields = [
+#             'id',
+#             'user_id',
+#             'staff_name',
+#             'role',
+#             'category',
+#             'email',
+#             'phone_number',
+#             'photo',
+#             'gender',
+#             'dob' ,
+#             'address',
+#             'qualification',
+#             'subject_expertise',
+#             'joining_date',
+#             'designation',
+#             'employment_type',
+#             'department',
+#             # 'status',
+#             'monthly_salary',
+#             'bank_account',
+#             'bank_name',
+#             'ifsc_code',
+#             'payroll_applicable',
+            
+#             'created_at',
+#             'assigned_class',
+#             # 'updated_at',
+#             ]
+
+#     def get_assigned_class(self, obj):
+
+#             assigned_class = ClassModel.objects.filter(
+#                 class_teacher=obj
+#             ).first()
+
+#             if not assigned_class:
+#                 return None
+
+#             today = timezone.now().date()
+
+#             total_students = StudentAcademicDetails.objects.filter(
+#                 student_class=assigned_class
+#             ).count()
+
+#             attendance_qs = StudentAttendance.objects.filter(
+#                 students_class=assigned_class,
+#                 date=today
+#             )
+
+#             present_count = attendance_qs.filter(status="Present").count()
+#             absent_count = attendance_qs.filter(status="Absent").count()
+#             others_count = attendance_qs.filter(
+#     status__in=["Late", "Half day"]
+# ).count()
+#             late_count = attendance_qs.filter(status="Late").count()
+#             half_day_count = attendance_qs.filter(status="Half day").count()
+
+#             is_marked = attendance_qs.exists()
+
+#             return {
+#                 "id": assigned_class.id,
+#                 "class_id": assigned_class.class_id,
+#                 "class_name": assigned_class.class_name,
+#                 "level": assigned_class.level,
+#                 "section": assigned_class.section,
+#                 "batch": assigned_class.batch,
+#                 "department": assigned_class.department,
+#                 "branch": assigned_class.branch,
+#                 "status": assigned_class.status,
+#                 "attendance_stats": {
+#                     "date": today,
+#                     "is_marked": is_marked,
+#                     "total_students": total_students,
+#                     "present_count": present_count,
+#                     "absent_count": absent_count,
+#                     # "late_count": late_count,
+#                     # "half_day_count": half_day_count,
+#                     "others_count" : others_count,
+#                 }
+#             }
 class TeacherProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.CharField(source='profiles.user_id', read_only=True)
     email = serializers.EmailField(source='profiles.email', read_only=True)
@@ -14,6 +107,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
         read_only=True
     )
     assigned_class = serializers.SerializerMethodField()
+
     class Meta:
         model = StaffManagementModel
         fields = [
@@ -26,7 +120,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             'phone_number',
             'photo',
             'gender',
-            'dob' ,
+            'dob',
             'address',
             'qualification',
             'subject_expertise',
@@ -34,74 +128,91 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             'designation',
             'employment_type',
             'department',
-            # 'status',
             'monthly_salary',
             'bank_account',
             'bank_name',
             'ifsc_code',
             'payroll_applicable',
-            
             'created_at',
             'assigned_class',
-            # 'updated_at',
-        
-
-
         ]
 
     def get_assigned_class(self, obj):
 
-            assigned_class = ClassModel.objects.filter(
-                class_teacher=obj
-            ).first()
+        assigned_class = ClassModel.objects.filter(
+            class_teacher=obj
+        ).first()
 
-            if not assigned_class:
-                return None
+        if not assigned_class:
+            return None
 
-            today = timezone.now().date()
+        today = timezone.now().date()
 
-            total_students = StudentAcademicDetails.objects.filter(
-                student_class=assigned_class
-            ).count()
+        total_students = StudentAcademicDetails.objects.filter(
+            student_class=assigned_class
+        ).count()
 
-            attendance_qs = StudentAttendance.objects.filter(
-                students_class=assigned_class,
-                date=today
-            )
+        attendance_qs = StudentAttendance.objects.filter(
+            students_class=assigned_class,
+            date=today
+        )
 
-            present_count = attendance_qs.filter(status="Present").count()
-            absent_count = attendance_qs.filter(status="Absent").count()
-            late_count = attendance_qs.filter(status="Late").count()
-            half_day_count = attendance_qs.filter(status="Half Day").count()
+        present_only_count = attendance_qs.filter(
+            status="Present"
+        ).count()
 
-            is_marked = attendance_qs.exists()
+        late_count = attendance_qs.filter(
+            status="Late"
+        ).count()
 
-            return {
-                "id": assigned_class.id,
-                "class_id": assigned_class.class_id,
-                "class_name": assigned_class.class_name,
-                "level": assigned_class.level,
-                "section": assigned_class.section,
-                "batch": assigned_class.batch,
-                "department": assigned_class.department,
-                "branch": assigned_class.branch,
-                "status": assigned_class.status,
-                "attendance_stats": {
-                    "date": today,
-                    "is_marked": is_marked,
-                    "total_students": total_students,
-                    "present_count": present_count,
-                    "absent_count": absent_count,
-                    "late_count": late_count,
-                    "half_day_count": half_day_count
-                }
+        half_day_count = attendance_qs.filter(
+            status="Half day"
+        ).count()
+
+        absent_count = attendance_qs.filter(
+            status="Absent"
+        ).count()
+
+        # Present count includes Present + Late + Half day
+        present_count = attendance_qs.filter(
+            status__in=["Present", "Late", "Half day"]
+        ).count()
+
+        others_count = late_count + half_day_count
+
+        is_marked = attendance_qs.exists()
+
+        return {
+            "id": assigned_class.id,
+            "class_id": assigned_class.class_id,
+            "class_name": assigned_class.class_name,
+            "level": assigned_class.level,
+            "section": assigned_class.section,
+            "batch": assigned_class.batch,
+            "department": assigned_class.department,
+            "branch": assigned_class.branch,
+            "status": assigned_class.status,
+            "attendance_stats": {
+                "date": today,
+                "is_marked": is_marked,
+                "total_students": total_students,
+                "present_count": present_count,
+               # "present_only_count": present_only_count,
+                "absent_count": absent_count,
+               # "late_count": late_count,
+              #  "half_day_count": half_day_count,
+                "others_count": others_count
             }
-    
+        }    
     
     
 # applyleave 
-
 class TeacherLeaveSerializer(serializers.ModelSerializer):
+    documents = serializers.ListField(
+        child=serializers.FileField(),
+        required=False,
+        write_only=True
+    )
 
     class Meta:
         model = TeacherLeave
@@ -154,6 +265,8 @@ class TeacherLeaveSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
 
+        documents = validated_data.pop("documents", [])
+
         from_date = validated_data["from_date"]
         to_date = validated_data["to_date"]
         leave_type = validated_data["leave_type"]
@@ -166,10 +279,23 @@ class TeacherLeaveSerializer(serializers.ModelSerializer):
                 (to_date - from_date).days + 1
             )
 
-        return super().create(validated_data)
+        leave = TeacherLeave.objects.create(
+            **validated_data
+        )
+
+        for document in documents:
+            TeacherLeaveDocument.objects.create(
+                leave=leave,
+                document=document
+            )
+
+        return leave
     
     
 class TeacherLeaveListSerializer(serializers.ModelSerializer):
+
+    documents = serializers.SerializerMethodField()
+
 
  
     class Meta:
@@ -185,8 +311,14 @@ class TeacherLeaveListSerializer(serializers.ModelSerializer):
             "half_day_type",
             "reason",
             "reachable_contact_number",
-            "supporting_document",
+            "documents",
             "SubstituteTeacher",
             "status",
             "created_at",
         ]
+
+
+
+    def get_documents(self, obj):
+        documents = TeacherLeaveDocument.objects.filter(leave=obj)
+        return documents.values_list("document", flat=True)

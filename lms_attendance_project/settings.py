@@ -30,12 +30,35 @@ DEBUG = True
 ALLOWED_HOSTS = [
         'localhost',
         '127.0.0.1',
-        '192.168.0.169',
+        '192.168.1.92',
+        '192.168.1.21',
+        'localhost',
+        '127.0.0.1',
+        '*',
+        '192.168.1.17'
 ]
 
 
 
 FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
+
+
+
+
+
+
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 
 
@@ -52,17 +75,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
     'superadmin_app',
     'teachers_app',
     'administration_app',
     'openpyxl',
     'django_extensions',
-    'corsheaders',
+    
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -70,6 +96,27 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://192.168.1.21:5174",
+]
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://192.168.1.21:5174",
+]
+
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+
 
 ROOT_URLCONF = 'lms_attendance_project.urls'
 
@@ -97,12 +144,12 @@ WSGI_APPLICATION = 'lms_attendance_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB', 'lms_db'),
-        'USER': config('POSTGRES_USER', 'postgres'),
-        'PASSWORD': config('POSTGRES_PASSWORD', 'admin'),
-        'HOST': config('POSTGRES_HOST', 'localhost'),
-        'PORT': config('POSTGRES_PORT', '5432'),
-        "CONN_MAX_AGE": 60,  
+        'NAME': config('POSTGRES_DB'),
+        'USER': config('POSTGRES_USER'),
+        'PASSWORD': config('POSTGRES_PASSWORD'),
+        'HOST': config('POSTGRES_HOST'),
+        'PORT': config('POSTGRES_PORT'),
+        # "CONN_MAX_AGE": 60,  
     }
 }
 
@@ -127,12 +174,17 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+
+
+TIME_ZONE = 'Asia/Kolkata'
+
 
 USE_I18N = True
 
@@ -157,10 +209,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # REST Framework settings
+# REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        #'rest_framework.authentication.SessionAuthentication',
+        'superadmin_app.authentication.SessionJWTAuthentication',
+        'superadmin_app.authentication.CookieOrHeaderJWTAuthentication',
     ),
+
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
@@ -170,15 +226,28 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta
 
-# JWT Settings
+# # JWT Settings
 SIMPLE_JWT = {
 
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,  
+    # 'ACCESS_TOKEN_LIFETIME': timedelta(seconds=30),
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=4),
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+  'ROTATE_REFRESH_TOKENS': False,
+  'BLACKLIST_AFTER_ROTATION': False,
                         
 }
+
+# from datetime import timedelta
+
+# JWT Settings
+# SIMPLE_JWT = {
+
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+#     'ROTATE_REFRESH_TOKENS': True,
+#     'BLACKLIST_AFTER_ROTATION': True,  
+                        
+# }
 
 
 # smtp settings
@@ -189,3 +258,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'cb01262002@gmail.com'
 EMAIL_HOST_PASSWORD = 'vikw fvdl ofow vprh'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+

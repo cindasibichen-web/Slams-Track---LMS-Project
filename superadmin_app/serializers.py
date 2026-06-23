@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from superadmin_app.models import *
-
+from django.db import transaction
 
 
 
@@ -199,6 +199,10 @@ class ProfileSettingsSerializer(serializers.ModelSerializer):
             else None
 
         )
+    
+
+
+
 
     def get_joining_date(self, obj):
 
@@ -243,7 +247,7 @@ class ProfileSettingsSerializer(serializers.ModelSerializer):
 
             obj,
 
-            'user_profiles',
+            'teacher_profile',
 
             None
 
@@ -263,7 +267,7 @@ class ProfileSettingsSerializer(serializers.ModelSerializer):
 
             obj,
 
-            'user_profiles',
+            'teacher_profile',
 
             None
 
@@ -312,6 +316,9 @@ class ProfileSettingsUpdateSerializer(serializers.ModelSerializer):
         allow_null=True
 
     )
+
+
+
 
     class Meta:
 
@@ -446,52 +453,67 @@ class ProfileSettingsUpdateSerializer(serializers.ModelSerializer):
             )
 
         return value
-
-    def update(
-        self,
-        instance,
-        validated_data
-    ):
+    
+ 
 
 
-        if 'fullname' in validated_data:
-            instance.fullname = validated_data.get('fullname') or ''
+    def update(self, instance, validated_data):
 
-        if 'email' in validated_data:
-            instance.email = validated_data.get('email') or ''
+        with transaction.atomic():
 
-        if 'phone_number' in validated_data:
-                    instance.phone_number = ''.join(
-            filter(
-                str.isdigit,
-                validated_data.get('phone_number', '')
-            )
-        )
+            if 'fullname' in validated_data:
+                instance.fullname = validated_data['fullname']
 
-        if 'address' in validated_data:
-            instance.address = validated_data.get('address') or ''
+            if 'email' in validated_data:
+                instance.email = validated_data['email']
 
-        if 'gender' in validated_data:
-            instance.gender = validated_data.get('gender') or ''
+            if 'phone_number' in validated_data:
+                instance.phone_number = ''.join(
+                    filter(str.isdigit, validated_data['phone_number'])
+                )
 
-        if 'profile_photo' in validated_data:
-            instance.photo = validated_data.get('profile_photo')
+            if 'staff_name' in validated_data:
+                instance.staff_name = validated_data['staff_name']
 
-        instance.save(
-            update_fields=[
-                'fullname',
-                'email',
-                'phone_number',
-                'address',
-                'gender',
-                'photo'
-            ]
-        )
+            if 'address' in validated_data:
+                instance.address = validated_data['address']
 
-        instance.refresh_from_db()
+            if 'gender' in validated_data:
+                instance.gender = validated_data['gender']
+
+            if 'profile_photo' in validated_data:
+                instance.photo = validated_data['profile_photo']
+
+            instance.save()
+
+            # Update StaffManagementModel
+            try:
+                staff = instance.teacher_profile
+
+                update_fields = []
+
+                if 'fullname' in validated_data:
+                    staff.staff_name = validated_data['fullname']
+                    update_fields.append('staff_name')
+
+                if 'address' in validated_data:
+                    staff.address = validated_data['address']
+                    update_fields.append('address')
+
+                if 'gender' in validated_data:
+                    staff.gender = validated_data['gender']
+                    update_fields.append('gender')
+
+                if update_fields:
+                    staff.save(update_fields=update_fields)
+
+            except StaffManagementModel.DoesNotExist:
+                pass
+
+            instance.refresh_from_db()
 
         return instance
-
+    
 # =====================================================
 # CHANGE PASSWORD SERIALIZER
 # =====================================================
@@ -577,5 +599,270 @@ class ChangePasswordSerializer(serializers.Serializer):
                 'new_password':
                 'Password cannot contain the word password.'
             })
+
+        return attrs
+    
+
+#Security Settings 
+
+
+class LoginHistorySerializer(serializers.ModelSerializer):
+
+    user_id = serializers.CharField(
+        source='user.user_id',
+        read_only=True
+    )
+
+    fullname = serializers.CharField(
+        source='user.fullname',
+        read_only=True
+    )
+
+    role = serializers.CharField(
+        source='user.role',
+        read_only=True
+    )
+
+    email = serializers.EmailField(
+        source='user.email',
+        read_only=True
+    )
+
+    class Meta:
+
+        model = LoginHistory
+
+        fields = [
+            'id',
+            'user_id',
+            'fullname',
+            'role',
+            'email',
+            'login_time',
+            'logout_time',
+            'ip_address',
+            'device_name',
+            'browser',
+            'location',
+            'login_status',
+            'created_at'
+        ]
+
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+
+            data = super().to_representation(instance)
+
+            if data.get('device_name'):
+                data['device_name'] = data['device_name'][:100]
+
+            if data.get('ip_address') == '127.0.0.1':
+                data['location'] = 'Local Development'
+
+            return data
+
+class ActiveSessionSerializer(serializers.ModelSerializer):
+
+    user_id = serializers.CharField(
+        source='user.user_id',
+        read_only=True
+    )
+
+    fullname = serializers.CharField(
+        source='user.fullname',
+        read_only=True
+    )
+
+    role = serializers.CharField(
+        source='user.role',
+        read_only=True
+    )
+
+    def to_representation(self, instance):
+
+        data = super().to_representation(instance)
+
+        if data.get('device_name'):
+            data['device_name'] = data['device_name'][:100]
+
+        if data.get('ip_address') == '127.0.0.1':
+            data['location'] = 'Local Development'
+
+        return data
+
+    class Meta:
+
+        model = UserSession
+
+        fields = [
+            'id',
+            'user_id',
+            'fullname',
+            'role',
+            'device_name',
+            'browser',
+            'ip_address',
+            'location',
+            'is_active',
+            'last_activity',
+            'created_at'
+        ]
+
+        read_only_fields = fields
+
+
+import secrets
+import string
+
+
+class PasswordResetSerializer(serializers.Serializer):
+
+    user_id = serializers.CharField(
+        required=True
+    )
+
+    send_email = serializers.BooleanField(
+        default=True
+    )
+
+    remarks = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )
+
+    def validate(self, attrs):
+
+        user_id = attrs.get('user_id')
+
+        if not user_id:
+            raise serializers.ValidationError(
+                'User ID is required.'
+            )
+        
+        user = Profiles.objects.filter(
+            user_id=user_id,
+            is_active=True
+        ).first()
+
+        if not user:
+            raise serializers.ValidationError(
+                'User not found or inactive.'
+            )
+        
+        if not user.email:
+            raise serializers.ValidationError(
+                'Selected user does not have a registered email address.'
+            )
+
+        return attrs
+
+    def validate_user_id(
+        self,
+        value
+    ):
+
+        exists = Profiles.objects.filter(
+            user_id=value,
+            is_active=True
+        ).exists()
+
+        if not exists:
+
+            raise serializers.ValidationError(
+                "User not found."
+            )
+
+        return value
+    
+    def validate_remarks(self, value):
+
+        if len(value.strip()) > 500:
+            raise serializers.ValidationError(
+                'Remarks cannot exceed 500 characters.'
+            )
+        return value.strip()
+
+    def generate_password(self):
+
+        alphabet = (
+            string.ascii_uppercase +
+            string.ascii_lowercase +
+            string.digits +
+            '@#$%&!'
+        )
+
+        while True:
+
+            password = ''.join(
+                secrets.choice(alphabet)
+                for _ in range(12)
+            )
+
+            if (
+                any(c.isupper() for c in password)
+                and any(c.islower() for c in password)
+                and any(c.isdigit() for c in password)
+                and any(c in '@#$%&!' for c in password)
+            ):
+                return password
+        
+class PasswordResetAuditSerializer(serializers.ModelSerializer):
+
+    target_user_id = serializers.CharField(
+        source='target_user.user_id',
+        read_only=True
+    )
+
+    target_user_name = serializers.CharField(
+        source='target_user.fullname',
+        read_only=True
+    )
+
+    reset_by_id = serializers.CharField(
+        source='reset_by.user_id',
+        read_only=True
+    )
+
+    reset_by_name = serializers.CharField(
+        source='reset_by.fullname',
+        read_only=True
+    )
+
+    class Meta:
+
+        model = PasswordResetAudit
+
+        fields = [
+            'id',
+            'target_user_id',
+            'target_user_name',
+            'reset_by_id',
+            'reset_by_name',
+            'temporary_password_sent',
+            'remarks',
+            'created_at'
+        ]
+
+        read_only_fields = fields
+
+class SecurityDashboardSerializer(serializers.Serializer):
+
+    total_logins = serializers.IntegerField()
+
+    total_failed_logins = serializers.IntegerField()
+
+    active_sessions = serializers.IntegerField()
+
+    password_resets = serializers.IntegerField()
+
+    def validate(self, attrs):
+
+        for key, value in attrs.items():
+
+            if value < 0:
+                raise serializers.ValidationError(
+                    f'{key} cannot be negative.'
+                )
 
         return attrs
