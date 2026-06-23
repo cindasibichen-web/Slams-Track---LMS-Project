@@ -44,7 +44,7 @@ DEBUG = config('DEBUG')
 
 ALLOWED_HOSTS=[
 
-    'https://slams-track-lms-project-7o67.onrender.com' ,
+    'slams-track-lms-project-7o67.onrender.com' ,
 
     ]
 
