@@ -91,9 +91,6 @@
 
 #         return None
 
-    
-
-    
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework.exceptions import AuthenticationFailed
@@ -175,7 +172,7 @@ class CookieOrHeaderJWTAuthentication(JWTAuthentication):
             )
 
             raise AuthenticationFailed(
-                "Session expired."
+                "Session expired." 
             )
 
         session.last_activity = (
@@ -298,8 +295,6 @@ class CookieOrHeaderJWTAuthentication(JWTAuthentication):
         return None
     
     
-
-
 class SessionJWTAuthentication(JWTAuthentication):
 
     def authenticate(self, request):
@@ -341,8 +336,7 @@ class SessionJWTAuthentication(JWTAuthentication):
 
         if (
             session.expires_at and
-            session.expires_at < timezone.now()
-        ):
+            session.expires_at < timezone.now()):
 
             session.is_active = False
 

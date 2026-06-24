@@ -1182,9 +1182,17 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
             )
 
             total_payable = (
-                course_fee -
-                discount
+                admission_amount -
+                discount +
+                course_fee
             )
+
+            if discount > admission_amount:
+
+                raise serializers.ValidationError({
+                    'discount':
+                    'Discount cannot exceed admission amount.'
+                })
 
             if paid_amount > total_payable:
 
@@ -1293,13 +1301,23 @@ class AdmissionUpdateSerializer(serializers.ModelSerializer):
                 financial.paid_amount or 0
             )
 
-            total_payable = (
-                course_fee -
-                discount
+            # ==================================
+            # TOTAL AMOUNT CALCULATION
+            # (Admission Amount - Discount)
+            # + Course Fee
+            # ==================================
+
+            total_amount = (
+                admission_amount -
+                discount +
+                course_fee
             )
 
+            if total_amount < 0:
+                total_amount = Decimal("0")
+
             financial.balance_amount = max(
-                total_payable - paid_amount,
+                total_amount - paid_amount,
                 Decimal("0")
             )
 
