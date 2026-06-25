@@ -622,7 +622,7 @@ class TokenRefreshAPIView(APIView):
                 value=str(access_token),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
                 max_age=15 * 60,
             )
 
@@ -631,7 +631,7 @@ class TokenRefreshAPIView(APIView):
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite="None",
                 max_age=7 * 24 * 60 * 60,
             )
 
@@ -1754,7 +1754,7 @@ class LoginAPIView(APIView):
         value=str(access_token),
         httponly=True,
         secure=False,
-        samesite="Lax",
+        samesite="None",
         max_age=15 * 60, 
     )
 
@@ -1763,7 +1763,7 @@ class LoginAPIView(APIView):
             value=str(refresh),
             httponly=True,
             secure=False,
-            samesite="Lax",
+            samesite="None",
              max_age=7 * 24 * 60 * 60,  # 7 days
         )
         return response    
