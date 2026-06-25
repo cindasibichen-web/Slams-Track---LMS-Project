@@ -1893,7 +1893,8 @@ class AdmissionDetailAPIView(APIView):
                 'message': 'Student not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
-#  admission update 
+ 
+# admission update 
 class AdmissionUpdateAPIView(APIView):
 
     permission_classes = [IsAuthenticated]

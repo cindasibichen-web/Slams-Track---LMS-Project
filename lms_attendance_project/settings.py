@@ -45,6 +45,7 @@ DEBUG = config('DEBUG')
 ALLOWED_HOSTS=[
 
     'slams-track-lms-project-7o67.onrender.com' ,
+    
 
     ]
 
@@ -107,10 +108,14 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:5174",
+#     "http://192.168.1.21:5174",
+# ]
+
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.21:5174",
+    "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
 ]
 
 
@@ -120,12 +125,14 @@ CORS_ALLOWED_ORIGINS = [
 #     "http://192.168.1.21:5174",
 # ]
 
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default=""
-).split(",")
+# CSRF_TRUSTED_ORIGINS = config(
+#     "CSRF_TRUSTED_ORIGINS",
+#     default=""
+# ).split(",")
 
-# CSRF_TRUSTED_ORIGINS=https://lms-attendance.onrender.com
+CSRF_TRUSTED_ORIGINS = [
+    "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
+]
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -142,6 +149,9 @@ SECURE_PROXY_SSL_HEADER = (
 SECURE_BROWSER_XSS_FILTER = True
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
 
 
 ROOT_URLCONF = 'lms_attendance_project.urls'
