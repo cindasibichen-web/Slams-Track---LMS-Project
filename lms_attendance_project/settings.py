@@ -42,14 +42,16 @@ DEBUG = config('DEBUG')
 #     default="localhost,127.0.0.1"
 # ).split(",")
 
-ALLOWED_HOSTS=[
+# ALLOWED_HOSTS=[
 
-    'slams-track-lms-project-7o67.onrender.com' ,
-    '192.168.1.47' ,
+#     'slams-track-lms-project-7o67.onrender.com' ,
+#     '192.168.1.47' ,
     
 
-    ]
+#     ]
 
+
+ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
 FERNET = config('FERNET_KEY')  # Load from .env or use a default for development
 
 
@@ -115,13 +117,13 @@ CORS_ALLOW_CREDENTIALS = True
 #     "http://192.168.1.21:5174",
 # ]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
+# CORS_ALLOWED_ORIGINS = [
+#     "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
     
-     "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.21:5174",
-]
+#      "http://localhost:5173",
+#     "http://localhost:5174",
+#     "http://192.168.1.21:5174",
+# ]
 
 
 # CSRF_TRUSTED_ORIGINS = [
@@ -135,12 +137,18 @@ CORS_ALLOWED_ORIGINS = [
 #     default=""
 # ).split(",")
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
-        "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.21:5174",
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
+#         "http://localhost:5173",
+#     "http://localhost:5174",
+#     "http://192.168.1.21:5174",
+# ]
+
+
+
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS").split(",")
+
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS").split(",")
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
