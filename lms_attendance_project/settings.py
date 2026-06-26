@@ -47,7 +47,7 @@ ALLOWED_HOSTS=[
     'slams-track-lms-project-7o67.onrender.com' ,
     '192.168.1.47' ,
     '127.0.0.1',
-      'localhost',
+    'localhost',
     
 
     ]
