@@ -30,6 +30,7 @@ from administration_app.pagination import ListPagination
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
+from django.db.models import F
 
 # Create your views here.
 
@@ -1594,6 +1595,7 @@ class TokenRefreshAPIView(APIView):
 
 # login
 class LoginAPIView(APIView):
+    authentication_classes = []
 
     permission_classes = [AllowAny]
 
@@ -1746,7 +1748,7 @@ class LoginAPIView(APIView):
 
             
 
-            session_jti = refresh["jti"]
+            session_jti = access_token["jti"]
 
             UserSession.objects.create(
                 user=user,
@@ -4604,74 +4606,54 @@ class ForceLogoutUserAPIView(APIView):
     def post(self, request):
 
         if request.user.role not in [
-            'SuperAdmin',
-            'Administration staff'
+            "SuperAdmin",
+            "Administration staff",
         ]:
-
-            return Response({
-                'status': False,
-                'message': 'Permission denied.'
-            }, status=403)
-
-        # =====================================
-        # INVALIDATE ALL TOKENS FOR ALL USERS
-        # =====================================
-
-        users = Profiles.objects.all()
-
-        for user in users:
-
-            user.token_version += 1
-
-            user.save(
-                update_fields=['token_version']
+            return Response(
+                {
+                    "status": False,
+                    "message": "Permission denied."
+                },
+                status=403
             )
 
-        # =====================================
-        # DEACTIVATE ALL ACTIVE SESSIONS
-        # =====================================
+        # Increment token version for all users except the current user
+        Profiles.objects.exclude(
+            id=request.user.id
+        ).update(
+            token_version=F("token_version") + 1
+        )
 
-        affected_sessions = UserSession.objects.filter(
+        # Deactivate all sessions except the current user's
+        affected_sessions = UserSession.objects.exclude(
+            user=request.user
+        ).filter(
             is_active=True
         ).update(
             is_active=False
         )
 
-        # =====================================
-        # CLOSE ALL OPEN LOGIN HISTORY RECORDS
-        # =====================================
-
-        open_logins = LoginHistory.objects.filter(
-            logout_time__isnull=True
-        )
-
+        # Close login history except the current user's
         logout_time = timezone.now()
 
-        for login in open_logins:
+        LoginHistory.objects.exclude(
+            user=request.user
+        ).filter(
+            logout_time__isnull=True
+        ).update(
+            logout_time=logout_time,
+            login_status="LOGOUT"
+        )
 
-            login.logout_time = logout_time
-
-            login.login_status = 'LOGOUT'
-
-            login.save(
-                update_fields=[
-                    'logout_time',
-                    'login_status'
-                ]
-            )
-
-        # =====================================
-        # RESPONSE
-        # =====================================
-
-        return Response({
-            'status': True,
-            'message': (
-                'All active users have been force logged out.'
-            ),
-            'affected_sessions': affected_sessions
-        }, status=status.HTTP_200_OK)    
-
+        return Response(
+            {
+                "status": True,
+                "message": "All other users have been force logged out.",
+                "affected_sessions": affected_sessions
+            },
+            status=status.HTTP_200_OK
+        )
+    
 
 class ResetPasswordAPIView(APIView):
 

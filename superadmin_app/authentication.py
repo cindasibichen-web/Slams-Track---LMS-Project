@@ -143,13 +143,11 @@ class CookieOrHeaderJWTAuthentication(JWTAuthentication):
 
         session = UserSession.objects.filter(
 
+             session_id=token_jti,
             user=user,
-
             token_version=user.token_version,
-
             is_active=True
-
-        ).order_by("-created_at").first()
+        ).first()
 
         if not session:
 
