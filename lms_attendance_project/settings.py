@@ -43,9 +43,11 @@ DEBUG = config('DEBUG')
 # ).split(",")
 
 ALLOWED_HOSTS=[
-
+  
     'slams-track-lms-project-7o67.onrender.com' ,
     '192.168.1.47' ,
+    '127.0.0.1',
+      'localhost',
     
 
     ]
@@ -111,35 +113,19 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://localhost:5174",
-#     "http://192.168.1.21:5174",
-# ]
 
 CORS_ALLOWED_ORIGINS = [
     "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
-    
-     "http://localhost:5173",
+    "http://localhost:5173",
     "http://localhost:5174",
     "http://192.168.1.21:5174",
 ]
 
 
-# CSRF_TRUSTED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://localhost:5174",
-#     "http://192.168.1.21:5174",
-# ]
-
-# CSRF_TRUSTED_ORIGINS = config(
-#     "CSRF_TRUSTED_ORIGINS",
-#     default=""
-# ).split(",")
 
 CSRF_TRUSTED_ORIGINS = [
     "https://slams-track-dashboard-git-main-doyal-s-projects.vercel.app",
-        "http://localhost:5173",
+    "http://localhost:5173",
     "http://localhost:5174",
     "http://192.168.1.21:5174",
 ]
