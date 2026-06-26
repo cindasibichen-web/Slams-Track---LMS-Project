@@ -516,75 +516,126 @@ class TokenRefreshAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        print("REFRESH API HIT")
-        print(request)
-        print("AUTH HEADER =", request.headers.get("Authorization"))
-        print("\n========== TOKEN REFRESH START ==========")
 
         refresh_token = request.data.get("refresh")
 
-        print("REFRESH TOKEN FROM BODY =", refresh_token)
-
         if not refresh_token:
             refresh_token = request.COOKIES.get("refresh_token")
-            print("REFRESH TOKEN FROM COOKIE =", refresh_token)
 
         if not refresh_token:
-            print("NO REFRESH TOKEN FOUND")
-            return Response({
-                "status": False,
-                "message": "Refresh token is required"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "status": False,
+                    "message": "Refresh token is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
 
-            print("CREATING REFRESH TOKEN OBJECT")
-
             refresh = RefreshToken(refresh_token)
 
-            print("REFRESH TOKEN CREATED SUCCESSFULLY")
-            print("TOKEN JTI =", refresh.get("jti"))
-            print("TOKEN USER ID =", refresh.get("user_id"))
-            print("TOKEN VERSION =", refresh.get("token_version"))
-            print("TOKEN EXP =", refresh.get("exp"))
-
-            user_id = refresh.payload.get("user_id")
-
-            print("FETCHING USER =", user_id)
+            user_id = refresh.get("user_id")
 
             user = Profiles.objects.filter(
                 id=user_id
             ).first()
 
             if not user:
-                print("USER NOT FOUND")
-                return Response({
-                    "status": False,
-                    "message": "User not found"
-                }, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {
+                        "status": False,
+                        "message": "User not found."
+                    },
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-            print("USER FOUND =", user.user_id)
-            print("DB TOKEN VERSION =", user.token_version)
+            # =====================================
+            # CHECK TOKEN VERSION
+            # =====================================
 
-            token_version = refresh.payload.get(
+            token_version = refresh.get(
                 "token_version",
                 0
             )
 
-            print("TOKEN VERSION FROM JWT =", token_version)
-
             if token_version != user.token_version:
 
-                print(
-                    f"TOKEN VERSION MISMATCH | JWT={token_version} DB={user.token_version}"
+                response = Response(
+                    {
+                        "status": False,
+                        "message": "Session expired. Please login again."
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED
                 )
 
-                return Response({
-                    "status": False,
-                    "message": "Session expired. Please login again."
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                response.delete_cookie("access_token")
+                response.delete_cookie("refresh_token")
 
-            print("GENERATING NEW ACCESS TOKEN")
+                return response
+
+            # =====================================
+            # CHECK ACTIVE SESSION
+            # =====================================
+
+            session = UserSession.objects.filter(
+                user=user,
+                token_version=user.token_version,
+                is_active=True
+            ).first()
+
+            if not session:
+
+                response = Response(
+                    {
+                        "status": False,
+                        "message": "Session expired. Please login again."
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+                response.delete_cookie("access_token")
+                response.delete_cookie("refresh_token")
+
+                return response
+
+            # =====================================
+            # CHECK SESSION EXPIRY
+            # =====================================
+
+            if (
+                session.expires_at and
+                session.expires_at < timezone.now()
+            ):
+
+                session.is_active = False
+
+                session.save(
+                    update_fields=["is_active"]
+                )
+
+                response = Response(
+                    {
+                        "status": False,
+                        "message": "Session expired."
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+                response.delete_cookie("access_token")
+                response.delete_cookie("refresh_token")
+
+                return response
+
+            session.last_activity = timezone.now()
+
+            session.save(
+                update_fields=["last_activity"]
+            )
+
+            # =====================================
+            # CREATE NEW ACCESS TOKEN
+            # =====================================
 
             access_token = refresh.access_token
 
@@ -598,30 +649,23 @@ class TokenRefreshAPIView(APIView):
             )
             access_token["token_version"] = user.token_version
 
-            print("ACCESS TOKEN GENERATED")
-            print("ACCESS TOKEN JTI =", access_token.get("jti"))
-            print("ACCESS TOKEN EXP =", access_token.get("exp"))
-
-            response = Response({
-
-                "status": True,
-                "message": "Token refreshed successfully",
-
-                "tokens": {
-                    "access": str(access_token),
-                    "refresh": str(refresh)
-                }
-
-            }, status=status.HTTP_200_OK)
-
-            print("SETTING ACCESS COOKIE")
-            print("SETTING REFRESH COOKIE")
+            response = Response(
+                {
+                    "status": True,
+                    "message": "Token refreshed successfully.",
+                    "tokens": {
+                        "access": str(access_token),
+                        "refresh": str(refresh)
+                    }
+                },
+                status=status.HTTP_200_OK
+            )
 
             response.set_cookie(
                 key="access_token",
                 value=str(access_token),
                 httponly=True,
-                secure=False,
+                secure=True,          # False only for local development
                 samesite="None",
                 max_age=15 * 60,
             )
@@ -630,35 +674,39 @@ class TokenRefreshAPIView(APIView):
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
-                secure=False,
+                secure=True,          # False only for local development
                 samesite="None",
                 max_age=7 * 24 * 60 * 60,
             )
 
-            print("TOKEN REFRESH SUCCESS")
-            print("========== TOKEN REFRESH END ==========\n")
+            return response
+
+        except TokenError:
+
+            response = Response(
+                {
+                    "status": False,
+                    "message": "Refresh token is invalid or expired."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
 
             return response
 
-        except TokenError as e:
-
-            print("TOKEN ERROR =", str(e))
-            print("========== TOKEN REFRESH FAILED ==========\n")
-
-            return Response({
-                "status": False,
-                "message": "Token is invalid or expired"
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
         except Exception as e:
 
-            print("UNEXPECTED TOKEN REFRESH ERROR =", str(e))
-            print("========== TOKEN REFRESH FAILED ==========\n")
+            print(e)
 
-            return Response({
-                "status": False,
-                "message": "Unable to refresh token."
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {
+                    "status": False,
+                    "message": "Unable to refresh token."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 #  
 # class TokenRefreshAPIView(APIView):
@@ -1648,7 +1696,13 @@ class LoginAPIView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         refresh = RefreshToken.for_user(user)
-        refresh['token_version'] = user.token_version
+        refresh["profile_id"] = user.id
+        refresh["role"] = user.role
+        refresh["email"] = user.email
+        refresh["usersid"] = user.user_id
+        refresh["category"] = user.category.name if user.category else None
+        refresh["token_version"] = user.token_version
+       
 
 
 
@@ -1692,7 +1746,7 @@ class LoginAPIView(APIView):
 
             
 
-            session_jti = access_token["jti"]
+            session_jti = refresh["jti"]
 
             UserSession.objects.create(
                 user=user,
@@ -1723,12 +1777,20 @@ class LoginAPIView(APIView):
                 str(e)
             )
 
-        refresh["profile_id"] = user.id
-        refresh["role"] = user.role
-        refresh["email"] = user.email
-        refresh["usersid"] = user.user_id
-        refresh["category"] = user.category.name if user.category else None
-        refresh["token_version"] = user.token_version
+        # refresh["profile_id"] = user.id
+        # refresh["role"] = user.role
+        # refresh["email"] = user.email
+        # refresh["usersid"] = user.user_id
+        # refresh["category"] = user.category.name if user.category else None
+        # refresh["token_version"] = user.token_version
+
+        # access_token["profile_id"] = user.id
+        # access_token["role"] = user.role
+        # access_token["email"] = user.email
+        # access_token["usersid"] = user.user_id
+        # access_token["category"] = user.category.name if user.category else None
+        # access_token["token_version"] = user.token_version
+
         response =  Response({
             "status": True,
             "message": "Login successful",
@@ -4609,6 +4671,7 @@ class ForceLogoutUserAPIView(APIView):
             ),
             'affected_sessions': affected_sessions
         }, status=status.HTTP_200_OK)    
+
 
 class ResetPasswordAPIView(APIView):
 
