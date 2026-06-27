@@ -668,7 +668,8 @@ class TokenRefreshAPIView(APIView):
                 httponly=True,
                 secure=True,          # False only for local development
                 samesite="None",
-                max_age=15 * 60,
+                # max_age=15 * 60,
+                expires=timezone.now() + settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
             )
 
             response.set_cookie(
@@ -677,7 +678,8 @@ class TokenRefreshAPIView(APIView):
                 httponly=True,
                 secure=True,          # False only for local development
                 samesite="None",
-                max_age=7 * 24 * 60 * 60,
+                # max_age=7 * 24 * 60 * 60,
+                expires=timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
             )
 
             return response
