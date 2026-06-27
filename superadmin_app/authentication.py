@@ -110,7 +110,7 @@ from superadmin_app.models import UserSession
 
 class CookieOrHeaderJWTAuthentication(JWTAuthentication):
     
-    
+
     def validate_session(
         self,
         user,
@@ -287,8 +287,9 @@ class CookieOrHeaderJWTAuthentication(JWTAuthentication):
                 InvalidToken,
                 TokenError,
                 AuthenticationFailed
-            ):
-                pass
+            ) as e:
+              print("AUTH ERROR:", str(e))
+              raise
 
         return None
     

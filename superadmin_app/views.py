@@ -649,7 +649,25 @@ class TokenRefreshAPIView(APIView):
                 if user.category else None
             )
             access_token["token_version"] = user.token_version
-
+            # =====================================
+            # UPDATE SESSION WITH NEW ACCESS TOKEN JTI
+            # =====================================
+            
+            new_jti = access_token["jti"]
+            
+            print("OLD SESSION JTI :", session.session_id)
+            print("NEW SESSION JTI :", new_jti)
+            
+            session.session_id = new_jti
+            session.last_activity = timezone.now()
+            
+            session.save(
+                update_fields=[
+                    "session_id",
+                    "last_activity",
+                ]
+            )
+            
             response = Response(
                 {
                     "status": True,
@@ -710,6 +728,8 @@ class TokenRefreshAPIView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
 
 #  
 # class TokenRefreshAPIView(APIView):
@@ -1819,10 +1839,10 @@ class LoginAPIView(APIView):
         key="access_token",
         value=str(access_token),
         httponly=True,
-        secure=True,
-            # secure=False,
-        samesite="None",
-        #  samesite="Lax",
+        # secure=True,
+            secure=False,
+        # samesite="None",
+         samesite="Lax",
         expires=timezone.now() + settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
         # max_age=15 * 60, 
         
@@ -1832,10 +1852,10 @@ class LoginAPIView(APIView):
             key="refresh_token",
             value=str(refresh),
             httponly=True,
-            secure=True,
-                # secure=False,
-            samesite="None",
-            #  samesite="Lax",
+            # secure=True,
+                secure=False,
+            # samesite="None",
+             samesite="Lax",
             #  max_age=7 * 24 * 60 * 60,  # 7 days
             expires=timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
         )
@@ -3364,6 +3384,26 @@ class DashboardKpiCardsAPIViews(APIView):
 
     def get(self, request):
 
+        # print("Request:", request)
+
+       
+        # print("Authorization Header:", request.headers.get("Authorization"))
+
+     
+        # print("All Headers:")
+        # for key, value in request.headers.items():
+        #     print(f"{key}: {value}")
+
+        # print("Cookies:", request.COOKIES)
+
+        # print("Access Token Cookie:", request.COOKIES.get("access_token"))
+        # print("Refresh Token Cookie:", request.COOKIES.get("refresh_token"))
+
+     
+        # print("Authenticated User:", request.user)
+
+        # print("request.auth:", request.auth)
+
         current_year = date.today().year
         previous_year = current_year - 1
 
@@ -3870,10 +3910,24 @@ class LogoutAPIView(APIView):
 
 
 class ProfileSettingsAPIView(APIView):
-
+ 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        print("Request:", request)
+
+       
+        print("Authorization Header:", request.headers.get("Authorization"))
+
+     
+        # print("All Headers:")
+        # for key, value in request.headers.items():
+        #     print(f"{key}: {value}")
+
+        # print("Cookies:", request.COOKIES)
+
+        print("Access Token Cookie:", request.COOKIES.get("access_token"))
+        print("Refresh Token Cookie:", request.COOKIES.get("refresh_token"))
 
         try:
 
