@@ -64,6 +64,12 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         academic_data = attrs.get("academic_details", {})
         roll_number = academic_data.get("roll_number")
+        student_class = academic_data.get("student_class")
+
+        if not student_class:
+         raise serializers.ValidationError({
+            "student_class": "Student class is required."
+        })
 
         # If roll number manually entered → check uniqueness
         if roll_number:

@@ -180,14 +180,12 @@ class StudentListAPIView(APIView):
 
         # -----------------------
         # SECTION FILTER
-        # -----------------------
         section = request.GET.get('section')
         if section:
             queryset = queryset.filter(section__iexact=section)
 
         # -----------------------
         # SESSION FILTER
-        # -----------------------
         session = request.GET.get('session')
         if session:
             queryset = queryset.filter(batch__iexact=session)
@@ -228,7 +226,6 @@ class StudentListAPIView(APIView):
     
     
 # automatic arrange roll number 
-
 class ArrangeRollNumbersAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -267,7 +264,7 @@ class ArrangeRollNumbersAPIView(APIView):
             "total_students": queryset.count()
         })
     
- # students overviews       
+# ********************* students overviews ************************************       
 class StudentoverviewAPIView(APIView):
 
     permission_classes = [IsAuthenticated]

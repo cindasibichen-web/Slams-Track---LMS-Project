@@ -26,9 +26,7 @@ urlpatterns = [
     path('leave-details-api/',LeaveDetailsAPIView.as_view()),
 
     
-    
-
-# **************************************** academic management  *****************************************************
+#***************************************** academic management  ****************************************************
     path('academic-kpi-cards/',AcademicManagementKPICardsAPIView.as_view()),
     path('add-class/' , AddListClassAPIView.as_view()),
     path('list-class/' , AddListClassAPIView.as_view()),
@@ -45,8 +43,7 @@ urlpatterns = [
 
     path('departments/',DepartmentListAPIView.as_view(),name='department-list'),
     
-
-#******************************************* student management *******************************************************
+#******************************************* student management ******************************************************
 
     path("dashboard/kpi/", StudentDashboardKPIAPIView.as_view()),
     path('add-student/' , AddStudents.as_view()),
@@ -61,9 +58,7 @@ urlpatterns = [
     path('sections-drop/',SectionsdropAPIView.as_view(), name='class-sections'),
     
 
-
-
-   #****************************************** finanace management ******************************************************
+#****************************************** finanace management ******************************************************
 
    path('finance/dashboard/',FinanceDashboardAPIView.as_view(),name='finance-dashboard'),
    path('finance/admissions/',AdmissionListAPIView.as_view(),name='admission-list'),
@@ -77,7 +72,7 @@ urlpatterns = [
     path('finance/reports/revenue-months/',RevenueMonthListAPIView.as_view(),name='revenue-months'),
    path('finance/reports/revenue/',RevenueReportAPIView.as_view(),name='revenue-report'),
 
-   # exports 
+# ******************************************* exports ***************************************************************** 
 
     path('finance/export/admissions/',AdmissionExportAPIView.as_view()),
 
@@ -86,6 +81,7 @@ urlpatterns = [
     path('finance/export/teachers/',TeacherReportExportAPIView.as_view()),
 
     path('finance/export/revenue/',RevenueReportExportAPIView.as_view())
+
 
 
 
