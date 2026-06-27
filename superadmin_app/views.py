@@ -1817,18 +1817,25 @@ class LoginAPIView(APIView):
         key="access_token",
         value=str(access_token),
         httponly=True,
-        secure=False,
+        secure=True,
+            # secure=False,
         samesite="None",
-        max_age=15 * 60, 
+        #  samesite="Lax",
+        expires=timezone.now() + settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+        # max_age=15 * 60, 
+        
     )
 
         response.set_cookie(
             key="refresh_token",
             value=str(refresh),
             httponly=True,
-            secure=False,
+            secure=True,
+                # secure=False,
             samesite="None",
-             max_age=7 * 24 * 60 * 60,  # 7 days
+            #  samesite="Lax",
+            #  max_age=7 * 24 * 60 * 60,  # 7 days
+            expires=timezone.now() + settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
         )
         return response    
 

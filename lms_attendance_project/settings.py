@@ -260,8 +260,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        #'rest_framework.authentication.SessionAuthentication',
-        # 'superadmin_app.authentication.SessionJWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    
         'superadmin_app.authentication.CookieOrHeaderJWTAuthentication',
     ),
 
@@ -282,7 +282,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
 
     # 'ACCESS_TOKEN_LIFETIME': timedelta(seconds=30),
-  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=4),
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
   'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
   'ROTATE_REFRESH_TOKENS': False,
   'BLACKLIST_AFTER_ROTATION': False,
