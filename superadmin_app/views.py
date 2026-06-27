@@ -652,22 +652,22 @@ class TokenRefreshAPIView(APIView):
             # =====================================
             # UPDATE SESSION WITH NEW ACCESS TOKEN JTI
             # =====================================
-            
+
             new_jti = access_token["jti"]
-            
+
             print("OLD SESSION JTI :", session.session_id)
             print("NEW SESSION JTI :", new_jti)
-            
+
             session.session_id = new_jti
             session.last_activity = timezone.now()
-            
+
             session.save(
                 update_fields=[
                     "session_id",
                     "last_activity",
                 ]
             )
-            
+
             response = Response(
                 {
                     "status": True,
@@ -3844,6 +3844,7 @@ class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        print("Authorization Header:", request.headers.get("Authorization"))
 
         try:
 
